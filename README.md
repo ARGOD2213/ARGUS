@@ -143,3 +143,25 @@ Prediction:
 ```bash
 curl "http://localhost:8080/api/v1/device/MOTOR-01/prediction?forecastSteps=8"
 ```
+
+## 8. Mobile-first operations (start/stop/deploy/logs from phone)
+
+This repo now includes GitHub Actions workflows you can run from the GitHub mobile app:
+
+- `.github/workflows/mobile-ecs-control.yml`
+- `.github/workflows/mobile-deploy-ecs.yml`
+- `.github/workflows/mobile-cloudwatch-logs.yml`
+
+Before using them, add GitHub Actions secrets in repo settings:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+
+Then in GitHub app:
+
+1. Open repo -> `Actions`
+2. Pick workflow
+3. Tap `Run workflow`
+
+Detailed step-by-step mobile guide:
+- `docs/MOBILE_OPERATIONS_PLAYBOOK.md`

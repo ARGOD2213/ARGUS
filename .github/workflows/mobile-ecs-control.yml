@@ -1,0 +1,125 @@
+name: Mobile ECS Control
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "What do you want to do?"
+        required: true
+        default: "status"
+        type: choice
+        options:
+          - status
+          - start
+          - stop
+          - restart
+      aws_region:
+        description: "AWS region"
+        required: true
+        default: "ap-south-1"
+        type: string
+      ecs_cluster:
+        description: "ECS cluster name"
+        required: true
+        default: "iot-cluster"
+        type: string
+      ecs_service:
+        description: "ECS service name"
+        required: true
+        default: "iot-api"
+        type: string
+      desired_count:
+        description: "Desired count for start action"
+        required: true
+        default: "1"
+        type: string
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ inputs.aws_region }}
+
+      - name: Run ECS action
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACTION="${{ inputs.action }}"
+          REGION="${{ inputs.aws_region }}"
+          CLUSTER="${{ inputs.ecs_cluster }}"
+          SERVICE="${{ inputs.ecs_service }}"
+          DESIRED="${{ inputs.desired_count }}"
+
+          echo "Action=$ACTION Region=$REGION Cluster=$CLUSTER Service=$SERVICE"
+
+          case "$ACTION" in
+            start)
+              aws ecs update-service \
+                --region "$REGION" \
+                --cluster "$CLUSTER" \
+                --service "$SERVICE" \
+                --desired-count "$DESIRED" > /dev/null
+              ;;
+            stop)
+              aws ecs update-service \
+                --region "$REGION" \
+                --cluster "$CLUSTER" \
+                --service "$SERVICE" \
+                --desired-count 0 > /dev/null
+              ;;
+            restart)
+              aws ecs update-service \
+                --region "$REGION" \
+                --cluster "$CLUSTER" \
+                --service "$SERVICE" \
+                --force-new-deployment > /dev/null
+              ;;
+            status)
+              ;;
+            *)
+              echo "Unsupported action: $ACTION"
+              exit 1
+              ;;
+          esac
+
+      - name: Show ECS status
+        shell: bash
+        run: |
+          set -euo pipefail
+          REGION="${{ inputs.aws_region }}"
+          CLUSTER="${{ inputs.ecs_cluster }}"
+          SERVICE="${{ inputs.ecs_service }}"
+
+          STATUS_JSON="$(aws ecs describe-services \
+            --region "$REGION" \
+            --cluster "$CLUSTER" \
+            --services "$SERVICE" \
+            --output json)"
+
+          echo "$STATUS_JSON" > ecs-status.json
+          RUNNING="$(echo "$STATUS_JSON" | jq -r '.services[0].runningCount')"
+          DESIRED="$(echo "$STATUS_JSON" | jq -r '.services[0].desiredCount')"
+          SERVICE_STATUS="$(echo "$STATUS_JSON" | jq -r '.services[0].status')"
+          TASK_DEF="$(echo "$STATUS_JSON" | jq -r '.services[0].taskDefinition')"
+
+          {
+            echo "## Mobile ECS Control Result"
+            echo ""
+            echo "- Service status: $SERVICE_STATUS"
+            echo "- Desired count: $DESIRED"
+            echo "- Running count: $RUNNING"
+            echo "- Task definition: $TASK_DEF"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload status artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ecs-status
+          path: ecs-status.json
