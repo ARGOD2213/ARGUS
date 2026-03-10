@@ -7,3 +7,4 @@ out.json
 .idea/
 *.iml
 .DS_Store
+~$*.docx
