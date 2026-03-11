@@ -1,0 +1,8 @@
+{
+  "Records": [
+    {
+      "messageId": "test-msg-001",
+      "body": "{\"timestamp\":\"2026-03-11T05:20:00Z\",\"machine_id\":\"AMM-FEED-GAS-COMP-001\",\"machine_class\":\"Compressor\",\"sensor_type\":\"VIBRATION\",\"sensor_value\":8.4,\"sensor_unit\":\"mm_s\",\"plant_zone\":\"Ammonia-Unit\"}"
+    }
+  ]
+}

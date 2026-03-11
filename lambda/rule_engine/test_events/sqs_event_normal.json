@@ -1,0 +1,8 @@
+{
+  "Records": [
+    {
+      "messageId": "test-msg-002",
+      "body": "{\"timestamp\":\"2026-03-11T05:25:00Z\",\"machine_id\":\"UREA-GRANULATOR-001\",\"machine_class\":\"Granulator\",\"sensor_type\":\"TEMPERATURE\",\"sensor_value\":42.2,\"sensor_unit\":\"C\",\"plant_zone\":\"Urea-Finishing\"}"
+    }
+  ]
+}

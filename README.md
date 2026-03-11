@@ -19,6 +19,27 @@ Step 3 (after demo — ALWAYS DO THIS):
 
 Cost target: `~$7 total for 6 months` at `~1 hr/day` usage.
 
+## Sprint 1 foundation (current)
+
+- Data contract and validation:
+  - `docs/schema/sensor_event_schema.json`
+  - `docs/schema/source_to_canonical_mapping.json`
+  - `scripts/validate-industrial-csv.ps1`
+- Partitioned analytics path (S3 + Athena):
+  - `scripts/partition-industrial-csv.ps1`
+  - `scripts/setup-athena-partitioned.ps1`
+  - `docs/SPRINT1_DATA_FOUNDATION_RUNBOOK.md`
+- Serverless safety rule engine:
+  - `lambda/rule_engine/handler.py`
+  - `lambda/rule_engine/config/rules.json`
+  - `scripts/deploy-rule-engine-lambda.ps1`
+  - `docs/RULE_ENGINE_LAMBDA_SETUP.md`
+- Architecture decisions (ADRs):
+  - `docs/adr/ADR-001-rule-engine-lambda.md`
+  - `docs/adr/ADR-002-no-ot-write-path.md`
+  - `docs/adr/ADR-003-llm-advisory-labels-mandatory.md`
+  - `docs/adr/ADR-004-athena-partitioning-strategy.md`
+
 > Budget note: For this repository's demo budget mode, use EC2 start/stop workflows and avoid always-on ECS/ALB.
 
 Production IoT monitoring backend with:

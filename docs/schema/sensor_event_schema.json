@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argodreign.local/schema/sensor_event_schema.json",
+  "title": "ARGODREIGN Canonical Sensor Event",
+  "description": "Canonical event contract used across ingestion, analytics, dashboards, and AI advisory pipeline.",
+  "type": "object",
+  "required": [
+    "timestamp_epoch",
+    "machine_id",
+    "machine_class",
+    "sensor_type",
+    "sensor_value",
+    "sensor_unit",
+    "quality_tag",
+    "plant_zone",
+    "alert_severity"
+  ],
+  "properties": {
+    "timestamp_epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "UTC epoch seconds for event timestamp."
+    },
+    "machine_id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128
+    },
+    "machine_class": {
+      "type": "string",
+      "enum": [
+        "Compressor",
+        "Pump",
+        "Reactor",
+        "Reformer",
+        "Boiler",
+        "Fan",
+        "Turbine",
+        "Condenser",
+        "Stripper",
+        "Absorber",
+        "Scrubber",
+        "Evaporator",
+        "Tower",
+        "Granulator",
+        "Dryer",
+        "Storage",
+        "Security",
+        "Environmental",
+        "Generator",
+        "Package",
+        "Converter",
+        "Blower",
+        "Packaging"
+      ]
+    },
+    "sensor_type": {
+      "type": "string",
+      "enum": [
+        "TEMPERATURE",
+        "HUMIDITY",
+        "CO2",
+        "AIR_QUALITY",
+        "BAROMETRIC_PRESSURE",
+        "VIBRATION",
+        "ACOUSTIC_EMISSION",
+        "MOTOR_CURRENT",
+        "RPM",
+        "OIL_PRESSURE",
+        "BEARING_TEMPERATURE",
+        "GAS_LEAK",
+        "SMOKE_DENSITY",
+        "CHEMICAL_CONCENTRATION",
+        "WATER_LEAK",
+        "VOLTAGE",
+        "POWER_CONSUMPTION",
+        "POWER_FACTOR",
+        "BATTERY_LEVEL",
+        "MOTION",
+        "DOOR_SENSOR",
+        "LOAD_CELL"
+      ]
+    },
+    "sensor_value": {
+      "type": "number"
+    },
+    "sensor_unit": {
+      "type": "string",
+      "minLength": 0,
+      "maxLength": 32
+    },
+    "quality_tag": {
+      "type": "string",
+      "enum": ["GOOD", "UNCERTAIN", "BAD", "MISSING"]
+    },
+    "plant_zone": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "alert_severity": {
+      "type": "string",
+      "enum": ["NORMAL", "WARNING", "CRITICAL"]
+    },
+    "facility_id": { "type": "string" },
+    "cell_name": { "type": "string" },
+    "product_stream": { "type": "string" },
+    "latitude": { "type": ["number", "null"], "minimum": -90, "maximum": 90 },
+    "longitude": { "type": ["number", "null"], "minimum": -180, "maximum": 180 },
+    "weather_condition": { "type": "string" },
+    "weather_temp_c": { "type": ["number", "null"] },
+    "weather_humidity_pct": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+    "ai_risk_score": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+    "llm_consensus": { "type": "string" }
+  },
+  "additionalProperties": true,
+  "x_contract_version": "1.0.0",
+  "x_owner": "ARGODREIGN",
+  "x_notes": [
+    "This is the canonical contract for analytics and dashboard API payloads.",
+    "CSV source columns can differ; use source_to_canonical_mapping.json for extraction rules."
+  ]
+}

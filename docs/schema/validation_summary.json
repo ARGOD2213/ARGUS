@@ -1,0 +1,103 @@
+{
+    "generated_at":  "2026-03-11T11:42:24.9970183+05:30",
+    "csv_path":  "C:\\Users\\pavan\\Desktop\\ARGODREIGN\\data\\industrial_dummy_1gb.csv",
+    "schema_path":  "C:\\Users\\pavan\\Desktop\\ARGODREIGN\\docs\\schema\\sensor_event_schema.json",
+    "rows_validated":  3100891,
+    "validation_coverage_pct":  96.53,
+    "missing_alias_fields":  [
+                                 "quality_tag"
+                             ],
+    "stats":  {
+                  "total_rows":  3100891,
+                  "row_length_mismatch":  107462,
+                  "invalid_timestamp":  0,
+                  "missing_machine_id":  0,
+                  "missing_machine_class":  0,
+                  "invalid_sensor_type":  0,
+                  "invalid_sensor_value":  0,
+                  "missing_sensor_unit":  0,
+                  "missing_plant_zone":  0,
+                  "invalid_alert_severity":  0,
+                  "invalid_quality_tag":  0,
+                  "quality_tag_defaulted":  3100891
+              },
+    "severity_distribution":  {
+                                  "CRITICAL":  107462,
+                                  "WARNING":  356138,
+                                  "NORMAL":  2637291
+                              },
+    "top_sensor_types":  [
+                             {
+                                 "sensor_type":  "POWER_CONSUMPTION",
+                                 "count":  393468
+                             },
+                             {
+                                 "sensor_type":  "POWER_FACTOR",
+                                 "count":  224837
+                             },
+                             {
+                                 "sensor_type":  "VOLTAGE",
+                                 "count":  224837
+                             },
+                             {
+                                 "sensor_type":  "TEMPERATURE",
+                                 "count":  215472
+                             },
+                             {
+                                 "sensor_type":  "GAS_LEAK",
+                                 "count":  196735
+                             },
+                             {
+                                 "sensor_type":  "SMOKE_DENSITY",
+                                 "count":  196735
+                             },
+                             {
+                                 "sensor_type":  "CHEMICAL_CONCENTRATION",
+                                 "count":  196735
+                             },
+                             {
+                                 "sensor_type":  "MOTOR_CURRENT",
+                                 "count":  187364
+                             },
+                             {
+                                 "sensor_type":  "OIL_PRESSURE",
+                                 "count":  187364
+                             },
+                             {
+                                 "sensor_type":  "BEARING_TEMPERATURE",
+                                 "count":  187364
+                             }
+                         ],
+    "sample_issues":  [
+                          "Row 52: column mismatch (expected 35, got 37)",
+                          "Row 71: column mismatch (expected 35, got 37)",
+                          "Row 120: column mismatch (expected 35, got 37)",
+                          "Row 145: column mismatch (expected 35, got 37)",
+                          "Row 183: column mismatch (expected 35, got 37)",
+                          "Row 266: column mismatch (expected 35, got 37)",
+                          "Row 369: column mismatch (expected 35, got 37)",
+                          "Row 440: column mismatch (expected 35, got 37)",
+                          "Row 513: column mismatch (expected 35, got 37)",
+                          "Row 529: column mismatch (expected 35, got 37)",
+                          "Row 538: column mismatch (expected 35, got 37)",
+                          "Row 550: column mismatch (expected 35, got 37)",
+                          "Row 591: column mismatch (expected 35, got 37)",
+                          "Row 642: column mismatch (expected 35, got 37)",
+                          "Row 658: column mismatch (expected 35, got 37)",
+                          "Row 711: column mismatch (expected 35, got 37)",
+                          "Row 712: column mismatch (expected 35, got 37)",
+                          "Row 730: column mismatch (expected 35, got 37)",
+                          "Row 773: column mismatch (expected 35, got 37)",
+                          "Row 817: column mismatch (expected 35, got 37)",
+                          "Row 924: column mismatch (expected 35, got 37)",
+                          "Row 931: column mismatch (expected 35, got 37)",
+                          "Row 938: column mismatch (expected 35, got 37)",
+                          "Row 956: column mismatch (expected 35, got 37)",
+                          "Row 976: column mismatch (expected 35, got 37)",
+                          "Row 1053: column mismatch (expected 35, got 37)",
+                          "Row 1071: column mismatch (expected 35, got 37)",
+                          "Row 1084: column mismatch (expected 35, got 37)",
+                          "Row 1153: column mismatch (expected 35, got 37)",
+                          "Row 1191: column mismatch (expected 35, got 37)"
+                      ]
+}

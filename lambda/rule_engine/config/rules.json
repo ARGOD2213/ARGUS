@@ -1,0 +1,114 @@
+{
+  "version": "1.0.0",
+  "description": "ARGODREIGN baseline safety rulepack for Sprint 1",
+  "publish_min_severity": "WARNING",
+  "dedup_window_seconds": 600,
+  "rules": [
+    {
+      "id": "NH3_AREA_PPM_GT_25",
+      "sensor_type": "GAS_LEAK",
+      "operator": "GT",
+      "threshold": 25,
+      "severity": "CRITICAL",
+      "title": "NH3 leak concentration above area limit",
+      "recommendation": "Trigger emergency response and isolate leak source immediately.",
+      "reference": "Factory Act safety controls + plant emergency protocol"
+    },
+    {
+      "id": "COMP_VIBRATION_GT_7_1",
+      "machine_class": "Compressor",
+      "sensor_type": "VIBRATION",
+      "operator": "GT",
+      "threshold": 7.1,
+      "severity": "CRITICAL",
+      "title": "Compressor vibration exceeds critical band",
+      "recommendation": "Reduce load and inspect alignment/bearing condition.",
+      "reference": "ISO 10816-3 severity guidance"
+    },
+    {
+      "id": "BFW_PUMP_VIBRATION_GT_4_5",
+      "machine_class": "Pump",
+      "sensor_type": "VIBRATION",
+      "operator": "GT",
+      "threshold": 4.5,
+      "severity": "WARNING",
+      "title": "Pump vibration trend above warning band",
+      "recommendation": "Plan inspection within shift and verify coupling health.",
+      "reference": "ISO 10816 warning guidance"
+    },
+    {
+      "id": "BEARING_TEMP_GT_72",
+      "sensor_type": "BEARING_TEMPERATURE",
+      "operator": "GT",
+      "threshold": 72,
+      "severity": "WARNING",
+      "title": "Bearing temperature elevated",
+      "recommendation": "Check lubrication and cooling before continued high-load operation.",
+      "reference": "Asset reliability baseline"
+    },
+    {
+      "id": "REFORMER_TEMP_GT_900",
+      "machine_class": "Reformer",
+      "sensor_type": "TEMPERATURE",
+      "operator": "GT",
+      "threshold": 900,
+      "severity": "CRITICAL",
+      "title": "Reformer section over-temperature",
+      "recommendation": "Initiate burner and feed checks per emergency SOP.",
+      "reference": "Reformer tube integrity control limits"
+    },
+    {
+      "id": "UREA_HP_REACTOR_TEMP_GT_195",
+      "machine_class": "Reactor",
+      "sensor_type": "TEMPERATURE",
+      "operator": "GT",
+      "threshold": 195,
+      "severity": "CRITICAL",
+      "title": "HP reactor temperature outside envelope",
+      "recommendation": "Escalate to panel operator and verify process condition immediately.",
+      "reference": "Urea high-pressure operating envelope"
+    },
+    {
+      "id": "INSTRUMENT_AIR_PRESSURE_LT_5",
+      "machine_class": "Compressor",
+      "sensor_type": "OIL_PRESSURE",
+      "operator": "LT",
+      "threshold": 5,
+      "severity": "CRITICAL",
+      "title": "Instrument air train pressure collapse risk",
+      "recommendation": "Confirm compressor support systems and switch to standby line.",
+      "reference": "Instrument air continuity requirements"
+    },
+    {
+      "id": "POWER_FACTOR_LT_0_85",
+      "sensor_type": "POWER_FACTOR",
+      "operator": "LT",
+      "threshold": 0.85,
+      "severity": "WARNING",
+      "title": "Power factor below warning threshold",
+      "recommendation": "Check motor loading and capacitor compensation.",
+      "reference": "Utility reliability standard"
+    },
+    {
+      "id": "WBGT_PROXY_TEMP_GT_38",
+      "machine_class": "Environmental",
+      "sensor_type": "TEMPERATURE",
+      "operator": "GT",
+      "threshold": 38,
+      "severity": "WARNING",
+      "title": "Heat stress watch condition",
+      "recommendation": "Apply hydration/rest cycle and reduce exposure duration.",
+      "reference": "Occupational heat stress policy"
+    },
+    {
+      "id": "PLATFORM_DLQ_DEPTH_GT_0",
+      "sensor_type": "DLQ_DEPTH",
+      "operator": "GT",
+      "threshold": 0,
+      "severity": "CRITICAL",
+      "title": "DLQ has undelivered safety messages",
+      "recommendation": "Inspect failed event payloads and clear consumer errors immediately.",
+      "reference": "SQS reliability control"
+    }
+  ]
+}

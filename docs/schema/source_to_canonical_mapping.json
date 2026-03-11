@@ -1,0 +1,29 @@
+{
+  "mapping_version": "1.0.0",
+  "source_formats": {
+    "industrial_dump_csv": {
+      "timestamp_epoch": ["timestamp"],
+      "machine_id": ["machine_id", "deviceId"],
+      "machine_class": ["machine_class"],
+      "sensor_type": ["sensor_type", "sensorType"],
+      "sensor_value": ["value"],
+      "sensor_unit": ["unit"],
+      "quality_tag": ["quality_tag"],
+      "plant_zone": ["area", "location"],
+      "alert_severity": ["status"],
+      "facility_id": ["facility_id", "facilityId"],
+      "cell_name": ["cell_name"],
+      "latitude": ["latitude"],
+      "longitude": ["longitude"]
+    }
+  },
+  "defaults": {
+    "quality_tag": "GOOD",
+    "alert_severity": "NORMAL"
+  },
+  "transforms": {
+    "timestamp_epoch": "parse ISO timestamp to unix epoch seconds",
+    "sensor_type": "uppercase",
+    "alert_severity": "uppercase"
+  }
+}
