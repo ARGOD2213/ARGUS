@@ -12,6 +12,11 @@
   - `/compliance.html` (compliance)
 - Sprint 3: `PENDING`
 
+## Mobile Browser Space
+
+- Open this from phone for live handoff updates:
+  - `docs/MOBILE_CHAT_SPACE.md`
+
 ## ðŸ“± Start/Stop from Phone
 
 Step 1 (one time on laptop):
