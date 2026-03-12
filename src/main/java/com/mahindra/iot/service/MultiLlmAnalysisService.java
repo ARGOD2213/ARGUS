@@ -3,13 +3,19 @@ package com.mahindra.iot.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mahindra.iot.model.SensorEvent;
+import com.mahindra.iot.repository.SensorEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 @Service
@@ -17,8 +23,13 @@ import java.util.Map;
 @Slf4j
 public class MultiLlmAnalysisService {
 
+    private static final int MEDIUM_DATA_POINTS = 12;
+    private static final int HIGH_DATA_POINTS = 144;
+    private static final int MAINT_HISTORY_POINTS = 24;
+
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final SensorEventRepository sensorEventRepository;
 
     @Value("${ai.gemini.api.key:}")
     private String geminiKey;
@@ -30,23 +41,106 @@ public class MultiLlmAnalysisService {
     private boolean analysisEnabled;
 
     public void analyze(SensorEvent event) {
-        if (!analysisEnabled || !"WARNING".equals(event.getStatus()) && !"CRITICAL".equals(event.getStatus())) {
-            applyRuleBasedAnalysis(event);
+        AnalysisContext context = buildAnalysisContext(event);
+        String confidence = computeConfidence(
+                context.dataPointsAvailable(),
+                context.hasMaintHistory(),
+                context.hasWeatherContext());
+        event.setAiConfidence(confidence);
+
+        if (!analysisEnabled || (!"WARNING".equals(event.getStatus()) && !"CRITICAL".equals(event.getStatus()))) {
+            applyRuleBasedAnalysis(event, confidence);
             return;
         }
+
         try {
             if (geminiKey != null && !geminiKey.isBlank()) {
                 callGemini(event);
                 event.setLlmConsensus("GEMINI_ANALYSIS");
-                log.info("Gemini analysis complete for {} — riskScore={}", event.getDeviceId(), event.getAiRiskScore());
+                log.info("Gemini analysis complete for {} - riskScore={}, confidence={}",
+                        event.getDeviceId(), event.getAiRiskScore(), event.getAiConfidence());
             } else {
-                log.debug("Gemini key not configured — using rule-based analysis");
-                applyRuleBasedAnalysis(event);
+                log.debug("Gemini key not configured - using rule-based analysis");
+                applyRuleBasedAnalysis(event, confidence);
             }
         } catch (Exception e) {
-            log.warn("LLM analysis failed for {}: {} — falling back to rule-based", event.getDeviceId(), e.getMessage());
-            applyRuleBasedAnalysis(event);
+            log.warn("LLM analysis failed for {}: {} - falling back to rule-based", event.getDeviceId(), e.getMessage());
+            applyRuleBasedAnalysis(event, confidence);
         }
+    }
+
+    private AnalysisContext buildAnalysisContext(SensorEvent event) {
+        int dataPointsAvailable = countRecentDataPoints(event.getDeviceId());
+        boolean hasMaintHistory = dataPointsAvailable >= MAINT_HISTORY_POINTS;
+        boolean hasWeatherContext = hasWeatherContext(event);
+        return new AnalysisContext(dataPointsAvailable, hasMaintHistory, hasWeatherContext);
+    }
+
+    private int countRecentDataPoints(String deviceId) {
+        if (deviceId == null || deviceId.isBlank()) {
+            return 0;
+        }
+
+        Instant cutoff = Instant.now().minus(24, ChronoUnit.HOURS);
+        long count = sensorEventRepository.findByDeviceId(deviceId).stream()
+                .map(SensorEvent::getTimestamp)
+                .map(this::parseInstantSafe)
+                .filter(ts -> ts.isAfter(cutoff))
+                .count();
+
+        if (count > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+        return (int) count;
+    }
+
+    private Instant parseInstantSafe(String timestamp) {
+        if (timestamp == null || timestamp.isBlank()) {
+            return Instant.EPOCH;
+        }
+        try {
+            return Instant.parse(timestamp);
+        } catch (Exception ex) {
+            return Instant.EPOCH;
+        }
+    }
+
+    private boolean hasWeatherContext(SensorEvent event) {
+        String note = event.getWeatherCorrelationNote();
+        if (note == null || note.isBlank()) {
+            return false;
+        }
+
+        String normalized = note.trim().toLowerCase();
+        return !"n/a".equals(normalized);
+    }
+
+    private String computeConfidence(int dataPointsAvailable,
+                                     boolean hasMaintHistory,
+                                     boolean hasWeatherContext) {
+        int score = 0;
+
+        if (dataPointsAvailable >= HIGH_DATA_POINTS) {
+            score += 2;
+        } else if (dataPointsAvailable >= MEDIUM_DATA_POINTS) {
+            score += 1;
+        }
+
+        if (hasMaintHistory) {
+            score += 1;
+        }
+
+        if (hasWeatherContext) {
+            score += 1;
+        }
+
+        if (score >= 4) {
+            return "HIGH";
+        }
+        if (score >= 2) {
+            return "MEDIUM";
+        }
+        return "LOW";
     }
 
     private void callGemini(SensorEvent event) {
@@ -54,13 +148,13 @@ public class MultiLlmAnalysisService {
         String url = geminiUrl + "?key=" + geminiKey;
 
         Map<String, Object> body = Map.of(
-            "contents", new Object[]{
-                Map.of("parts", new Object[]{Map.of("text", prompt)})
-            },
-            "generationConfig", Map.of(
-                "temperature", 0.3,
-                "maxOutputTokens", 500
-            )
+                "contents", new Object[]{
+                        Map.of("parts", new Object[]{Map.of("text", prompt)})
+                },
+                "generationConfig", Map.of(
+                        "temperature", 0.3,
+                        "maxOutputTokens", 500
+                )
         );
 
         HttpHeaders headers = new HttpHeaders();
@@ -78,9 +172,8 @@ public class MultiLlmAnalysisService {
                     .path("content").path("parts").get(0)
                     .path("text").asText();
 
-            // Try to parse structured JSON from Gemini response
             int jsonStart = text.indexOf('{');
-            int jsonEnd   = text.lastIndexOf('}');
+            int jsonEnd = text.lastIndexOf('}');
             if (jsonStart >= 0 && jsonEnd > jsonStart) {
                 JsonNode json = objectMapper.readTree(text.substring(jsonStart, jsonEnd + 1));
                 event.setAiRiskScore(json.path("riskScore").asInt(50));
@@ -90,7 +183,6 @@ public class MultiLlmAnalysisService {
                 event.setAiPredictedFailureEta(json.path("predictedFailureEta").asText("Unknown"));
                 event.setGeminiRiskScore((double) event.getAiRiskScore());
             } else {
-                // Gemini gave free text, parse it manually
                 event.setAiIncidentSummary(text.length() > 300 ? text.substring(0, 300) : text);
                 event.setAiRiskScore("CRITICAL".equals(event.getStatus()) ? 85 : 60);
                 event.setAiRiskLevel("CRITICAL".equals(event.getStatus()) ? "HIGH" : "MEDIUM");
@@ -99,19 +191,19 @@ public class MultiLlmAnalysisService {
             }
         } catch (Exception e) {
             log.warn("Gemini response parse failed: {}", e.getMessage());
-            applyRuleBasedAnalysis(event);
+            applyRuleBasedAnalysis(event, event.getAiConfidence());
         }
     }
 
     private String buildPrompt(SensorEvent event) {
         return String.format("""
             You are an industrial IoT expert. Analyze this sensor alert and respond ONLY in JSON format.
-            
+
             Sensor: %s | Device: %s | Value: %.2f %s | Status: %s
             Location: %s | Category: %s
-            Weather: %.1f°C, %s
+            Weather: %.1fC, %s
             Weather Note: %s
-            
+
             Respond with ONLY this JSON (no markdown):
             {
               "riskScore": <0-100 integer>,
@@ -132,23 +224,24 @@ public class MultiLlmAnalysisService {
         );
     }
 
-    private void applyRuleBasedAnalysis(SensorEvent event) {
+    private void applyRuleBasedAnalysis(SensorEvent event, String confidence) {
         int score = "CRITICAL".equals(event.getStatus()) ? 85 : "WARNING".equals(event.getStatus()) ? 55 : 20;
         String level = "CRITICAL".equals(event.getStatus()) ? "HIGH" : "WARNING".equals(event.getStatus()) ? "MEDIUM" : "LOW";
 
         event.setAiRiskScore(score);
         event.setAiRiskLevel(level);
+        event.setAiConfidence(confidence != null ? confidence : "LOW");
         event.setGeminiRiskScore((double) score);
         event.setLlmConsensus("RULE_BASED");
 
         String type = event.getSensorType();
         event.setAiIncidentSummary(String.format(
-                "%s sensor on device %s is %s with value %.2f. Threshold exceeded — immediate attention required.",
+                "%s sensor on device %s is %s with value %.2f. Threshold exceeded, immediate attention required.",
                 type, event.getDeviceId(), event.getStatus(), event.getValue()));
 
         event.setAiRecommendedAction(switch (type) {
             case "TEMPERATURE", "BEARING_TEMPERATURE" -> "Check cooling system and reduce load. Inspect bearings for lubrication.";
-            case "VIBRATION" -> "Inspect motor/pump for mechanical imbalance or bearing wear.";
+            case "VIBRATION" -> "Inspect motor or pump for mechanical imbalance or bearing wear.";
             case "GAS_LEAK" -> "EVACUATE area immediately. Shut off gas supply. Contact safety team.";
             case "SMOKE_DENSITY" -> "Activate fire suppression system. Check for ignition sources.";
             case "WATER_LEAK" -> "Shut off water supply to affected line. Inspect pipe junction.";
@@ -160,5 +253,10 @@ public class MultiLlmAnalysisService {
         });
 
         event.setAiPredictedFailureEta("CRITICAL".equals(event.getStatus()) ? "Within 2-4 hours" : "Within 24 hours if unaddressed");
+    }
+
+    private record AnalysisContext(int dataPointsAvailable,
+                                   boolean hasMaintHistory,
+                                   boolean hasWeatherContext) {
     }
 }

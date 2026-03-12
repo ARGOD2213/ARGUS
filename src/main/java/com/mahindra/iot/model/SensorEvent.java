@@ -53,6 +53,7 @@ public class SensorEvent implements Serializable {
 
     private Integer aiRiskScore;
     private String aiRiskLevel;
+    private String aiConfidence;
     private String aiIncidentSummary;
     private String aiRecommendedAction;
     private String aiPredictedFailureEta;
