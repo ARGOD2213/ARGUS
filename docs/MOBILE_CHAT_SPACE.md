@@ -5,6 +5,16 @@ This is your online browser space to continue work from phone.
 Important:
 - The exact Codex desktop chat thread is not available on mobile.
 - This file is the live handoff bridge between desktop work and mobile updates.
+- This page itself is not a chat box. It is a document.
+
+## Why You Cannot Type Here
+
+GitHub file view is read-only by default.
+
+To type from phone, use one of these:
+1. Tap the pencil icon (`Edit`) on this file, add your note, and commit.
+2. Open or create a GitHub Issue and type comments there (best for chat-like updates).
+3. Keep using this Codex thread when desktop is available.
 
 ## How to Use From Phone
 
@@ -20,6 +30,8 @@ Important:
 - Sprint 2 progress in repo: machine, safety, plant, compliance dashboards added.
 - LLM confidence, advisory wrapper, and day-by-day evidence files are committed.
 - Remaining work should now follow reviewer checkpoint feedback and integration hardening.
+- Copy-paste packet for reviewer is available at:
+  - `docs/REVIEWER_COPY_PACKET.md`
 
 ## Reviewer Prompt (Copy/Paste)
 
