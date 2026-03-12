@@ -35,18 +35,32 @@ To type from phone, use one of these:
 3. Wait for action `Review Inbox Sync` to finish.
 4. Open:
    - `docs/REVIEW_INBOX.md`
-5. Send Codex:
+5. Run workflow:
+   - `Trigger Codex Execution`
+   - optional `issue_number`
+6. Send Codex:
    - `Process docs/REVIEW_INBOX.md and implement all P1 then P2 fixes. Commit and push.`
-6. If sync does not update in 2 minutes:
+7. If sync does not update in 2 minutes:
    - Run workflow `Review Inbox Sync` manually from Actions.
    - Pass `issue_number` if needed.
 
 ## Latest Update (IST)
 
+- Processed current synced review issue `#2`:
+  - Added interactive chart upgrades on all dashboards:
+    - `machine.html`: alert severity doughnut chart
+    - `safety.html`: risk mix + NH3 zone share charts
+    - `plant.html`: status mix + zone risk charts
+    - `compliance.html`: compliance component + inspection status charts
+- Added one-click trigger workflow:
+  - `.github/workflows/trigger-codex-execution.yml`
+  - queue files:
+    - `docs/CODEX_TRIGGER_QUEUE.md`
+    - `docs/CODEX_TRIGGER_LATEST.md`
 - Auto-sync trigger hardened:
   - Works for normal `Review` issue titles too.
   - Added manual Action run fallback (`Review Inbox Sync` with `issue_number`).
-- Synced current Issue `#1` into `docs/REVIEW_INBOX.md`.
+- Review inbox currently tracks latest issue from sync workflow.
 - Sprint 1: Closed.
 - Sprint 2 progress in repo: machine, safety, plant, compliance dashboards added.
 - LLM confidence, advisory wrapper, and day-by-day evidence files are committed.

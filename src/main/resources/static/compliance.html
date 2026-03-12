@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ARGODREIGN — Compliance Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -50,6 +51,11 @@
       .container { grid-template-columns: 1fr; }
     }
     .full { grid-column: 1 / -1; }
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 960px) {
+      .chart-grid { grid-template-columns: 1fr; }
+    }
+    .chart-wrap { height: 250px; }
     .card {
       background: #161b22;
       border: 1px solid #30363d;
@@ -170,10 +176,22 @@
     </div>
     <pre id="artifact-output">No action yet.</pre>
   </div>
+
+  <div class="card full">
+    <h3>📉 Compliance Analytics (Interactive)</h3>
+    <div class="chart-grid">
+      <div class="chart-wrap"><canvas id="componentMixChart"></canvas></div>
+      <div class="chart-wrap"><canvas id="inspectionMixChart"></canvas></div>
+    </div>
+  </div>
 </div>
 
 <script>
 const API = "";
+let componentMixChart = null;
+let inspectionMixChart = null;
+let latestSummary = null;
+let latestInspections = [];
 
 function scoreColor(score) {
   if (score > 95) return "chip-green";
@@ -185,6 +203,7 @@ async function loadSummary() {
   const el = document.getElementById("score-block");
   try {
     const data = await fetch(`${API}/api/v1/compliance/summary`).then(r => r.json());
+    latestSummary = data;
     const score = Number(data.overallComplianceScore || 0);
     const chip = scoreColor(score);
     el.innerHTML = `
@@ -201,6 +220,7 @@ async function loadSummary() {
   } catch (e) {
     el.innerHTML = `<div class="loading">Summary unavailable: ${e.message}</div>`;
   }
+  drawComplianceCharts();
 }
 
 async function loadEnvironment() {
@@ -224,6 +244,7 @@ async function loadInspections() {
   const el = document.getElementById("inspection-block");
   try {
     const rows = await fetch(`${API}/api/v1/compliance/inspections`).then(r => r.json());
+    latestInspections = Array.isArray(rows) ? rows : [];
     const html = rows.map(r => {
       const status = (r.status || "ON_TRACK").toUpperCase();
       const cls = status === "OVERDUE" ? "chip-red" : status === "DUE_SOON" ? "chip-yellow" : "chip-green";
@@ -248,6 +269,72 @@ async function loadInspections() {
   } catch (e) {
     el.innerHTML = `<div class="loading">Inspection table unavailable: ${e.message}</div>`;
   }
+  drawComplianceCharts();
+}
+
+function drawComplianceCharts() {
+  const compCanvas = document.getElementById("componentMixChart");
+  const inspCanvas = document.getElementById("inspectionMixChart");
+  if (!compCanvas || !inspCanvas) return;
+
+  if (componentMixChart) { componentMixChart.destroy(); componentMixChart = null; }
+  if (inspectionMixChart) { inspectionMixChart.destroy(); inspectionMixChart = null; }
+
+  if (latestSummary) {
+    const machine = Number(latestSummary.machineCompliance || 0);
+    const human = Number(latestSummary.humanCompliance || 0);
+    const env = Number(latestSummary.environmentCompliance || 0);
+
+    componentMixChart = new Chart(compCanvas.getContext("2d"), {
+      type: "doughnut",
+      data: {
+        labels: ["Machine", "Human", "Environment"],
+        datasets: [{
+          data: [machine, human, env],
+          backgroundColor: ["#58a6ff", "#e3b341", "#3fb950"],
+          borderColor: "#161b22",
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: "#8b949e", font: { size: 11 } } }
+        }
+      }
+    });
+  }
+
+  const statuses = { OVERDUE: 0, DUE_SOON: 0, ON_TRACK: 0 };
+  (latestInspections || []).forEach(r => {
+    const s = (r.status || "ON_TRACK").toUpperCase();
+    if (Object.prototype.hasOwnProperty.call(statuses, s)) {
+      statuses[s] += 1;
+    } else {
+      statuses.ON_TRACK += 1;
+    }
+  });
+
+  inspectionMixChart = new Chart(inspCanvas.getContext("2d"), {
+    type: "pie",
+    data: {
+      labels: ["Overdue", "Due Soon", "On Track"],
+      datasets: [{
+        data: [statuses.OVERDUE, statuses.DUE_SOON, statuses.ON_TRACK],
+        backgroundColor: ["#f85149", "#e3b341", "#3fb950"],
+        borderColor: "#161b22",
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: "#8b949e", font: { size: 11 } } }
+      }
+    }
+  });
 }
 
 async function generateForm7() {

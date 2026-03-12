@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ARGODREIGN — Human Safety Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -51,6 +52,10 @@
       .dashboard { grid-template-columns:1fr; }
     }
     .full-width { grid-column: 1 / -1; }
+    .two-col { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width:900px){
+      .two-col { grid-template-columns: 1fr; }
+    }
 
     /* ── CARDS ── */
     .card {
@@ -232,6 +237,7 @@
     .chip-blue   { background:#0c2d6b; color:#58a6ff; border:1px solid #1f6feb; }
 
     .loading { color:#8b949e; font-size:13px; padding:12px 0; }
+    .chart-wrap { height: 240px; }
     .last-updated {
       font-size:11px; color:#8b949e;
       text-align:right; margin-top:8px;
@@ -300,6 +306,18 @@
     </div>
   </div>
 
+  <!-- SECTION 5: SAFETY ANALYTICS -->
+  <div class="card full-width">
+    <h3>📉 Safety Analytics (Interactive)</h3>
+    <div class="two-col">
+      <div class="chart-wrap"><canvas id="riskMixChart"></canvas></div>
+      <div class="chart-wrap"><canvas id="zoneShareChart"></canvas></div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:#8b949e">
+      Left: Risk source split (NH3 breaches / Fatigue high / PTW missing). Right: NH3 share by zone.
+    </div>
+  </div>
+
   <!-- SECTION 5: OVERALL SAFETY SCORE -->
   <div class="card full-width">
     <h3>📊 Shift Safety Summary</h3>
@@ -315,6 +333,9 @@
 // WBGT COMPUTATION
 // ISO 7933 outdoor approximation from weather
 // ═══════════════════════════════════════════
+let riskMixChart = null;
+let zoneShareChart = null;
+
 function computeWBGT(tempC, humidityPct, isDay) {
   // Wet bulb approximation (Stull formula)
   const Tw = tempC * Math.atan(0.151977 * Math.pow(humidityPct + 8.313659, 0.5))
@@ -688,9 +709,75 @@ async function loadSummary() {
         Factories Act 1948 Schedule 8 | ACGIH TLV | OISD-STD-105 | ISO 7933
       </div>`;
 
+    drawSafetyCharts(nh3Data, nh3Breach, fatigueHigh, ptwMissing);
+
   } catch(e) {
     section.innerHTML = `<div class="loading">Summary unavailable — check API endpoints.</div>`;
   }
+}
+
+function drawSafetyCharts(nh3Data, nh3Breach, fatigueHigh, ptwMissing) {
+  const riskCanvas = document.getElementById('riskMixChart');
+  const zoneCanvas = document.getElementById('zoneShareChart');
+  if (!riskCanvas || !zoneCanvas) return;
+
+  if (riskMixChart) { riskMixChart.destroy(); riskMixChart = null; }
+  if (zoneShareChart) { zoneShareChart.destroy(); zoneShareChart = null; }
+
+  const riskVals = [nh3Breach, fatigueHigh, ptwMissing];
+  const riskTotal = riskVals.reduce((s, v) => s + v, 0);
+  riskMixChart = new Chart(riskCanvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['NH3 Breaches', 'High Fatigue', 'PTW Missing'],
+      datasets: [{
+        data: riskVals,
+        backgroundColor: ['#f85149', '#e3b341', '#58a6ff'],
+        borderColor: '#161b22',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#8b949e', font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const pct = riskTotal ? ((ctx.parsed * 100) / riskTotal).toFixed(1) : '0.0';
+              return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const zones = Array.isArray(nh3Data) ? nh3Data : [];
+  const zLabels = zones.map(z => z.zone || 'ZONE');
+  const zValues = zones.map(z => Number(z.ppm || 0));
+  const zColors = zValues.map(v => (v >= 25 ? '#f85149' : v >= 15 ? '#e3b341' : '#3fb950'));
+
+  zoneShareChart = new Chart(zoneCanvas.getContext('2d'), {
+    type: 'pie',
+    data: {
+      labels: zLabels,
+      datasets: [{
+        data: zValues,
+        backgroundColor: zColors,
+        borderColor: '#161b22',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#8b949e', font: { size: 11 } } }
+      }
+    }
+  });
 }
 
 // ═══════════════════════════════════════════

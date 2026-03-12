@@ -27,7 +27,11 @@ Use this when you are away from desktop.
 4. Wait 1-2 minutes for workflow `Review Inbox Sync`.
 5. Open:
    - `docs/REVIEW_INBOX.md`
-6. Send this one message to Codex:
+6. Run workflow:
+   - `Trigger Codex Execution`
+   - `issue_number=<your issue number>`
+   - `action_note=Apply all P1 first, then P2. Commit and push.`
+7. Send this one message to Codex:
    - `Process docs/REVIEW_INBOX.md and implement all P1 then P2 fixes. Commit and push.`
 
 ## Fallback if sync does not update in 2 minutes
@@ -36,6 +40,7 @@ Use this when you are away from desktop.
 2. Run workflow: `Review Inbox Sync`.
 3. Optional input: `issue_number` (example `1`).
 4. Re-open `docs/REVIEW_INBOX.md`.
+5. Then run workflow: `Trigger Codex Execution`.
 
 ## If reviewer adds new comments later
 
