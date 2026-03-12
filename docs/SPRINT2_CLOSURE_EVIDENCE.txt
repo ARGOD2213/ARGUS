@@ -1,0 +1,200 @@
+ARGODREIGN Sprint 2 Closure Evidence
+Timestamp: 2026-03-12 08:20:06 +05:30
+
+Command: aws s3api get-bucket-encryption --bucket iot-alert-engine-mahindra --region ap-south-1
+{
+    "ServerSideEncryptionConfiguration": {
+        "Rules": [
+            {
+                "ApplyServerSideEncryptionByDefault": {
+                    "SSEAlgorithm": "aws:kms"
+                },
+                "BucketKeyEnabled": true
+            }
+        ]
+    }
+}
+
+Command: aws ec2 describe-security-groups --group-ids sg-00ebba671bb6e22fb --region ap-south-1
+{
+    "SecurityGroups": [
+        {
+            "GroupId": "sg-00ebba671bb6e22fb",
+            "IpPermissionsEgress": [
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 80,
+                    "ToPort": 80,
+                    "UserIdGroupPairs": [],
+                    "IpRanges": [
+                        {
+                            "Description": "HTTP outbound for package mirrors",
+                            "CidrIp": "0.0.0.0/0"
+                        }
+                    ],
+                    "Ipv6Ranges": [],
+                    "PrefixListIds": []
+                },
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 53,
+                    "ToPort": 53,
+                    "UserIdGroupPairs": [],
+                    "IpRanges": [
+                        {
+                            "Description": "VPC DNS TCP",
+                            "CidrIp": "169.254.169.253/32"
+                        }
+                    ],
+                    "Ipv6Ranges": [],
+                    "PrefixListIds": []
+                },
+                {
+                    "IpProtocol": "udp",
+                    "FromPort": 53,
+                    "ToPort": 53,
+                    "UserIdGroupPairs": [],
+                    "IpRanges": [
+                        {
+                            "Description": "VPC DNS UDP",
+                            "CidrIp": "169.254.169.253/32"
+                        }
+                    ],
+                    "Ipv6Ranges": [],
+                    "PrefixListIds": []
+                },
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 443,
+                    "ToPort": 443,
+                    "UserIdGroupPairs": [],
+                    "IpRanges": [
+                        {
+                            "Description": "HTTPS outbound only",
+                            "CidrIp": "0.0.0.0/0"
+                        }
+                    ],
+                    "Ipv6Ranges": [],
+                    "PrefixListIds": []
+                }
+            ],
+            "VpcId": "vpc-026354c39444d6704",
+            "SecurityGroupArn": "arn:aws:ec2:ap-south-1:061039801536:security-group/sg-00ebba671bb6e22fb",
+            "OwnerId": "061039801536",
+            "GroupName": "argodreign-sg",
+            "Description": "ARGODREIGN IoT Engine",
+            "IpPermissions": [
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 8080,
+                    "ToPort": 8080,
+                    "UserIdGroupPairs": [],
+                    "IpRanges": [
+                        {
+                            "CidrIp": "0.0.0.0/0"
+                        }
+                    ],
+                    "Ipv6Ranges": [],
+                    "PrefixListIds": []
+                },
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 22,
+                    "ToPort": 22,
+                    "UserIdGroupPairs": [],
+                    "IpRanges": [
+                        {
+                            "CidrIp": "0.0.0.0/0"
+                        }
+                    ],
+                    "Ipv6Ranges": [],
+                    "PrefixListIds": []
+                }
+            ]
+        }
+    ]
+}
+
+Command: aws budgets describe-budgets --account-id 061039801536 --max-results 20
+{
+    "Budgets": [
+        {
+            "BudgetName": "My Monthly Cost Budget",
+            "BudgetLimit": {
+                "Amount": "20.0",
+                "Unit": "USD"
+            },
+            "CostTypes": {
+                "IncludeTax": true,
+                "IncludeSubscription": true,
+                "UseBlended": false,
+                "IncludeRefund": true,
+                "IncludeCredit": true,
+                "IncludeUpfront": true,
+                "IncludeRecurring": true,
+                "IncludeOtherSubscription": true,
+                "IncludeSupport": true,
+                "IncludeDiscount": true,
+                "UseAmortized": false
+            },
+            "TimeUnit": "MONTHLY",
+            "TimePeriod": {
+                "Start": "2026-03-01T05:30:00+05:30",
+                "End": "2087-06-15T05:30:00+05:30"
+            },
+            "CalculatedSpend": {
+                "ActualSpend": {
+                    "Amount": "0.0",
+                    "Unit": "USD"
+                }
+            },
+            "BudgetType": "COST",
+            "LastUpdatedTime": "2026-03-12T07:52:39.037000+05:30",
+            "HealthStatus": {
+                "Status": "HEALTHY",
+                "LastUpdatedTime": "2026-03-12T07:52:38.367000+05:30"
+            }
+        }
+    ]
+}
+
+Command: aws budgets describe-budget --account-id 061039801536 --budget-name "My Monthly Cost Budget"
+{
+    "Budget": {
+        "BudgetName": "My Monthly Cost Budget",
+        "BudgetLimit": {
+            "Amount": "20.0",
+            "Unit": "USD"
+        },
+        "CostTypes": {
+            "IncludeTax": true,
+            "IncludeSubscription": true,
+            "UseBlended": false,
+            "IncludeRefund": true,
+            "IncludeCredit": true,
+            "IncludeUpfront": true,
+            "IncludeRecurring": true,
+            "IncludeOtherSubscription": true,
+            "IncludeSupport": true,
+            "IncludeDiscount": true,
+            "UseAmortized": false
+        },
+        "TimeUnit": "MONTHLY",
+        "TimePeriod": {
+            "Start": "2026-03-01T05:30:00+05:30",
+            "End": "2087-06-15T05:30:00+05:30"
+        },
+        "CalculatedSpend": {
+            "ActualSpend": {
+                "Amount": "0.0",
+                "Unit": "USD"
+            }
+        },
+        "BudgetType": "COST",
+        "LastUpdatedTime": "2026-03-12T07:52:39.037000+05:30",
+        "HealthStatus": {
+            "Status": "HEALTHY",
+            "LastUpdatedTime": "2026-03-12T07:52:38.367000+05:30"
+        }
+    }
+}

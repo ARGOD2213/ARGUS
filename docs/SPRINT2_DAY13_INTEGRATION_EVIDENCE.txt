@@ -1,0 +1,175 @@
+ARGODREIGN Sprint 2 Day 13 - Full Integration Evidence
+Timestamp: 2026-03-12 08:18:01 +05:30
+
+1) Dashboard page availability:
+/compliance.html => 200
+/index.html => 200
+/safety.html => 200
+/machine.html => 200
+/plant.html => 200
+
+2) Test events injected (NORMAL / WARNING / CRITICAL):
+{
+    "message":  "Event ingested successfully",
+    "deviceId":  "S2-E2E-NORMAL-01",
+    "timestamp":  "2026-03-12T02:47:49.276345100Z",
+    "sensorType":  "VIBRATION",
+    "value":  1.8,
+    "status":  "NORMAL",
+    "alertFired":  false,
+    "aiRiskScore":  20,
+    "weatherNote":  "Weather: 28.0??C, 50% humidity, Clear. No direct weather correlation detected.",
+    "llmConsensus":  "RULE_BASED",
+    "aiAdvisory":  {
+                       "banner":  "[AI ADVISORY | Not a control action | Rule engine has final authority]",
+                       "label":  "AI ADVISORY",
+                       "notice":  "Not a control action",
+                       "authority":  "Rule engine has final authority",
+                       "confidence":  "LOW",
+                       "riskScore":  20,
+                       "analysis":  "VIBRATION sensor on device S2-E2E-NORMAL-01 is NORMAL with value 1.80. Threshold exceeded, immediate attention required.",
+                       "summary":  "VIBRATION sensor on device S2-E2E-NORMAL-01 is NORMAL with value 1.80. Threshold exceeded, immediate attention required.",
+                       "recommendedAction":  "Inspect motor or pump for mechanical imbalance or bearing wear.",
+                       "dataSource":  "RULE_BASED",
+                       "validFor":  "30 minutes",
+                       "calibrated":  false,
+                       "consensus":  "RULE_BASED"
+                   }
+}
+{
+    "message":  "Event ingested successfully",
+    "deviceId":  "S2-E2E-WARN-01",
+    "timestamp":  "2026-03-12T02:47:56.706385Z",
+    "sensorType":  "TEMPERATURE",
+    "value":  39.5,
+    "status":  "WARNING",
+    "alertFired":  true,
+    "aiRiskScore":  55,
+    "weatherNote":  "Weather: 28.0??C, 50% humidity, Clear. No direct weather correlation detected.",
+    "llmConsensus":  "RULE_BASED",
+    "aiAdvisory":  {
+                       "banner":  "[AI ADVISORY | Not a control action | Rule engine has final authority]",
+                       "label":  "AI ADVISORY",
+                       "notice":  "Not a control action",
+                       "authority":  "Rule engine has final authority",
+                       "confidence":  "LOW",
+                       "riskScore":  55,
+                       "analysis":  "TEMPERATURE sensor on device S2-E2E-WARN-01 is WARNING with value 39.50. Threshold exceeded, immediate attention required.",
+                       "summary":  "TEMPERATURE sensor on device S2-E2E-WARN-01 is WARNING with value 39.50. Threshold exceeded, immediate attention required.",
+                       "recommendedAction":  "Check cooling system and reduce load. Inspect bearings for lubrication.",
+                       "dataSource":  "RULE_BASED",
+                       "validFor":  "30 minutes",
+                       "calibrated":  false,
+                       "consensus":  "RULE_BASED"
+                   }
+}
+{
+    "message":  "Event ingested successfully",
+    "deviceId":  "COMP-CRIT-01",
+    "timestamp":  "2026-03-12T02:47:58.740223Z",
+    "sensorType":  "GAS_LEAK",
+    "value":  1300.0,
+    "status":  "CRITICAL",
+    "alertFired":  true,
+    "aiRiskScore":  85,
+    "weatherNote":  "Weather: 28.0??C, 50% humidity, Clear. No direct weather correlation detected.",
+    "llmConsensus":  "RULE_BASED",
+    "aiAdvisory":  {
+                       "banner":  "[AI ADVISORY | Not a control action | Rule engine has final authority]",
+                       "label":  "AI ADVISORY",
+                       "notice":  "Not a control action",
+                       "authority":  "Rule engine has final authority",
+                       "confidence":  "LOW",
+                       "riskScore":  85,
+                       "analysis":  "GAS_LEAK sensor on device COMP-CRIT-01 is CRITICAL with value 1300.00. Threshold exceeded, immediate attention required.",
+                       "summary":  "GAS_LEAK sensor on device COMP-CRIT-01 is CRITICAL with value 1300.00. Threshold exceeded, immediate attention required.",
+                       "recommendedAction":  "EVACUATE area immediately. Shut off gas supply. Contact safety team.",
+                       "dataSource":  "RULE_BASED",
+                       "validFor":  "30 minutes",
+                       "calibrated":  false,
+                       "consensus":  "RULE_BASED"
+                   }
+}
+
+3) Machine status check for compressor critical path:
+{
+    "machineId":  "COMP-CRIT-01",
+    "status":  "CRITICAL",
+    "lastTimestamp":  "2026-03-12T02:47:58.740223Z",
+    "lastSensorType":  "GAS_LEAK",
+    "lastValue":  1300.0,
+    "location":  "SYNTHESIS",
+    "machineClass":  "compressor",
+    "hasActiveAlert":  true
+}
+
+4) Alerts endpoint for compressor critical path:
+{
+    "machineId":  "COMP-CRIT-01",
+    "alertId":  "9d4a2eb3-fd42-4e48-bd14-bb7503a36486",
+    "timestamp":  "2026-03-12T02:47:58.740223Z",
+    "sensorType":  "GAS_LEAK",
+    "value":  1300.0,
+    "status":  "CRITICAL",
+    "aiRiskScore":  85,
+    "aiSummary":  "GAS_LEAK sensor on device COMP-CRIT-01 is CRITICAL with value 1300.00. Threshold exceeded, immediate attention required.",
+    "weatherNote":  "Weather: 28.0??C, 50% humidity, Clear. No direct weather correlation detected.",
+    "aiAdvisory":  {
+                       "banner":  "[AI ADVISORY | Not a control action | Rule engine has final authority]",
+                       "label":  "AI ADVISORY",
+                       "notice":  "Not a control action",
+                       "authority":  "Rule engine has final authority",
+                       "confidence":  "LOW",
+                       "riskScore":  85,
+                       "analysis":  "GAS_LEAK sensor on device COMP-CRIT-01 is CRITICAL with value 1300.00. Threshold exceeded, immediate attention required.",
+                       "summary":  "GAS_LEAK sensor on device COMP-CRIT-01 is CRITICAL with value 1300.00. Threshold exceeded, immediate attention required.",
+                       "recommendedAction":  "EVACUATE area immediately. Shut off gas supply. Contact safety team.",
+                       "dataSource":  "RULE_BASED",
+                       "validFor":  "30 minutes",
+                       "calibrated":  false,
+                       "consensus":  "RULE_BASED"
+                   }
+}
+
+5) Platform status endpoint:
+{
+    "platform":  "RUNNING",
+    "environment":  "demo",
+    "timestamp":  "2026-03-12T02:48:01.785011400Z",
+    "awsRegion":  "ap-south-1",
+    "ruleEngine":  "LAMBDA",
+    "llm":  "UNAVAILABLE",
+    "athena":  "CONFIGURED",
+    "queueConfigured":  false,
+    "dlqConfigured":  false,
+    "dlqDepth":  -1,
+    "lastAlert":  "2026-03-12T02:47:58.740223Z",
+    "eventCount":  1249,
+    "ec2InstanceId":  "N/A",
+    "ec2State":  "UNKNOWN_FROM_APP"
+}
+
+6) Weather endpoint for safety dashboard:
+{
+    "temperature":  28.0,
+    "humidity":  50.0,
+    "condition":  "Clear",
+    "windSpeed":  3.0,
+    "source":  "SYNTHETIC_FALLBACK"
+}
+
+7) Compliance summary endpoint:
+{
+    "formula":  "Machine*0.35 + Human*0.35 + Env*0.30",
+    "overallComplianceScore":  91.6,
+    "humanCompliance":  89.0,
+    "environmentCompliance":  94.0,
+    "machineCompliance":  92.0
+}
+
+8) Validation notes:
+- All 5 dashboards responded HTTP 200
+- CRITICAL machine appears in /api/machines with status CRITICAL
+- /api/machines/{id}/alerts returns aiAdvisory payload
+- Safety and compliance data endpoints returned non-empty payloads
+- Rule engine remains Lambda mode in platform status

@@ -1,6 +1,18 @@
-# ARGODREIGN IoT Alert Engine
+﻿# ARGODREIGN IoT Alert Engine
 
-## 📱 Start/Stop from Phone
+## Sprint Status
+
+- Sprint 1: `CLOSED`
+- Sprint 2: `CLOSED` (Day 1 to Day 14 evidence committed)
+- Active dashboards:
+  - `/index.html` (overview)
+  - `/machine.html` (machine-wise)
+  - `/safety.html` (human safety)
+  - `/plant.html` (plant-wide)
+  - `/compliance.html` (compliance)
+- Sprint 3: `PENDING`
+
+## ðŸ“± Start/Stop from Phone
 
 Step 1 (one time on laptop):
 ```bash
@@ -10,11 +22,11 @@ bash scripts/setup-ec2.sh
 - Add all secrets listed in `docs/GITHUB_SECRETS_SETUP.md`.
 
 Step 2 (from phone anytime):
-- GitHub app -> Actions -> `📱 START IoT Server` -> Run workflow
+- GitHub app -> Actions -> `ðŸ“± START IoT Server` -> Run workflow
 - Wait ~3 minutes -> open URL from workflow summary
 
-Step 3 (after demo — ALWAYS DO THIS):
-- GitHub app -> Actions -> `📱 STOP IoT Server` -> Run workflow
+Step 3 (after demo â€” ALWAYS DO THIS):
+- GitHub app -> Actions -> `ðŸ“± STOP IoT Server` -> Run workflow
 - Stops billing immediately
 
 Cost target: `~$7 total for 6 months` at `~1 hr/day` usage.
