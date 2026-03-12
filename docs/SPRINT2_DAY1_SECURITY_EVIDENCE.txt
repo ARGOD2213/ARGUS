@@ -1,0 +1,32 @@
+ARGODREIGN Sprint 2 Day 1 - Security Evidence
+Timestamp: 2026-03-12 06:56:35 +05:30
+Region: ap-south-1
+Bucket: iot-alert-engine-mahindra
+
+1) Bucket Encryption
+Command:
+aws s3api get-bucket-encryption --bucket iot-alert-engine-mahindra --region ap-south-1
+Output:
+{     "ServerSideEncryptionConfiguration": {         "Rules": [             {                 "ApplyServerSideEncryptionByDefault": {                     "SSEAlgorithm": "aws:kms"                 },                 "BucketKeyEnabled": true             }         ]     } }
+
+2) Lifecycle Configuration
+Command:
+aws s3api get-bucket-lifecycle-configuration --bucket iot-alert-engine-mahindra --region ap-south-1
+Output:
+{     "TransitionDefaultMinimumObjectSize": "all_storage_classes_128K",     "Rules": [         {             "Expiration": {                 "Days": 1825             },             "ID": "argodreign-data-lifecycle",             "Filter": {                 "Prefix": "alerts/"             },             "Status": "Enabled",             "Transitions": [                 {                     "Days": 90,                     "StorageClass": "STANDARD_IA"                 },                 {                     "Days": 365,                     "StorageClass": "GLACIER"                 }             ]         }     ] }
+
+3) Public Access Block
+Command:
+aws s3api get-public-access-block --bucket iot-alert-engine-mahindra --region ap-south-1
+Output:
+{     "PublicAccessBlockConfiguration": {         "BlockPublicAcls": true,         "IgnorePublicAcls": true,         "BlockPublicPolicy": true,         "RestrictPublicBuckets": true     } }
+
+4) Security Group Snapshot
+Command:
+aws ec2 describe-security-groups --group-ids sg-00ebba671bb6e22fb --region ap-south-1
+Output:
+{     "SecurityGroups": [         {             "GroupId": "sg-00ebba671bb6e22fb",             "IpPermissionsEgress": [                 {                     "IpProtocol": "tcp",                     "FromPort": 80,                     "ToPort": 80,                     "UserIdGroupPairs": [],                     "IpRanges": [                         {                             "Description": "HTTP outbound for package mirrors",                             "CidrIp": "0.0.0.0/0"                         }                     ],                     "Ipv6Ranges": [],                     "PrefixListIds": []                 },                 {                     "IpProtocol": "tcp",                     "FromPort": 53,                     "ToPort": 53,                     "UserIdGroupPairs": [],                     "IpRanges": [                         {                             "Description": "VPC DNS TCP",                             "CidrIp": "169.254.169.253/32"                         }                     ],                     "Ipv6Ranges": [],                     "PrefixListIds": []                 },                 {                     "IpProtocol": "udp",                     "FromPort": 53,                     "ToPort": 53,                     "UserIdGroupPairs": [],                     "IpRanges": [                         {                             "Description": "VPC DNS UDP",                             "CidrIp": "169.254.169.253/32"                         }                     ],                     "Ipv6Ranges": [],                     "PrefixListIds": []                 },                 {                     "IpProtocol": "tcp",                     "FromPort": 443,                     "ToPort": 443,                     "UserIdGroupPairs": [],                     "IpRanges": [                         {                             "Description": "HTTPS outbound only",                             "CidrIp": "0.0.0.0/0"                         }                     ],                     "Ipv6Ranges": [],                     "PrefixListIds": []                 }             ],             "VpcId": "vpc-026354c39444d6704",             "SecurityGroupArn": "arn:aws:ec2:ap-south-1:061039801536:security-group/sg-00ebba671bb6e22fb",             "OwnerId": "061039801536",             "GroupName": "argodreign-sg",             "Description": "ARGODREIGN IoT Engine",             "IpPermissions": [                 {                     "IpProtocol": "tcp",                     "FromPort": 8080,                     "ToPort": 8080,                     "UserIdGroupPairs": [],                     "IpRanges": [                         {                             "CidrIp": "0.0.0.0/0"                         }                     ],                     "Ipv6Ranges": [],                     "PrefixListIds": []                 },                 {                     "IpProtocol": "tcp",                     "FromPort": 22,                     "ToPort": 22,                     "UserIdGroupPairs": [],                     "IpRanges": [                         {                             "CidrIp": "0.0.0.0/0"                         }                     ],                     "Ipv6Ranges": [],                     "PrefixListIds": []                 }             ]         }     ] }
+
+5) OT Port Check
+Ports checked: 102, 502, 4840, 44818
+Result: PASS - no matching egress rules.
