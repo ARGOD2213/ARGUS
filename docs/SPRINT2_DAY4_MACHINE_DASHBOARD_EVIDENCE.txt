@@ -1,0 +1,244 @@
+ARGODREIGN Sprint 2 Day 4 - Machine Dashboard Evidence
+Timestamp: 2026-03-12 07:34:03 +05:30
+
+Build command:
+mvn -q -DskipTests package -> PASS
+
+1) Machine dashboard static page reachable
+GET http://localhost:8080/machine.html -> HTTP 200
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ARGODREIGN ??? Machine Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+    }
+
+    /* ?????? TOP BAR ?????? */
+    .topbar {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .topbar h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #58a6ff;
+      letter-spacing: 1px;
+    }
+    .platform-status {
+      display: flex;
+      gap: 16px;
+     
+
+2) Platform chips source endpoint
+GET http://localhost:8080/api/platform/status
+{
+    "platform":  "RUNNING",
+    "environment":  "demo",
+    "timestamp":  "2026-03-12T02:04:03.112408400Z",
+    "awsRegion":  "ap-south-1",
+    "ruleEngine":  "LAMBDA",
+    "llm":  "UNAVAILABLE",
+    "athena":  "CONFIGURED",
+    "queueConfigured":  false,
+    "dlqConfigured":  false,
+    "dlqDepth":  -1,
+    "lastAlert":  "2026-03-12T02:03:57.918095600Z",
+    "eventCount":  1243,
+    "ec2InstanceId":  "N/A",
+    "ec2State":  "UNKNOWN_FROM_APP"
+}
+
+3) Machine grid source endpoint (field-shape check)
+GET http://localhost:8080/api/machines
+[
+    {
+        "machineId":  "ENV-AQI-ROOF-001",
+        "status":  "CRITICAL",
+        "lastTimestamp":  "2026-03-10T14:58:16.591829299Z",
+        "lastSensorType":  "AIR_QUALITY",
+        "lastValue":  223.92,
+        "location":  "unknown",
+        "machineClass":  "environmental",
+        "hasActiveAlert":  true
+    },
+    {
+        "machineId":  "ENV-BARO-MAIN-001",
+        "status":  "NORMAL",
+        "lastTimestamp":  "2026-03-09T19:16:49.759193709Z",
+        "lastSensorType":  "BAROMETRIC_PRESSURE",
+        "lastValue":  1010.93,
+        "location":  "Main-Hall",
+        "machineClass":  "environmental",
+        "hasActiveAlert":  false
+    },
+    {
+        "machineId":  "ENV-CO2-ZONE-A-001",
+        "status":  "WARNING",
+        "lastTimestamp":  "2026-03-10T14:58:16.334720164Z",
+        "lastSensorType":  "CO2",
+        "lastValue":  1909.08,
+        "location":  "unknown",
+        "machineClass":  "environmental",
+        "hasActiveAlert":  true
+    },
+    {
+        "machineId":  "ENV-HUMID-ZONE-A-001",
+        "status":  "WARNING",
+        "lastTimestamp":  "2026-03-10T14:58:05.331897733Z",
+        "lastSensorType":  "HUMIDITY",
+        "lastValue":  75.1,
+        "location":  "unknown",
+        "machineClass":  "environmental",
+        "hasActiveAlert":  true
+    },
+    {
+        "machineId":  "ENV-TEMP-ZONE-A-001",
+        "status":  "WARNING",
+        "lastTimestamp":  "2026-03-10T14:58:05.077990420Z",
+        "last...
+
+4) Alerts table source endpoint
+GET http://localhost:8080/api/machines/MCH-VIBR-COMPRESSOR-003/alerts?limit=3
+[
+    {
+        "machineId":  "MCH-VIBR-COMPRESSOR-003",
+        "alertId":  "1a660c1b-1f79-4238-99eb-b28887c47490",
+        "timestamp":  "2026-03-12T02:03:52.733351200Z",
+        "sensorType":  "VIBRATION",
+        "value":  5.7,
+        "status":  "WARNING",
+        "aiRiskScore":  55,
+        "aiSummary":  "VIBRATION sensor on device MCH-VIBR-COMPRESSOR-003 is WARNING with value 5.70. Threshold exceeded, immediate attention required.",
+        "weatherNote":  "Weather data unavailable",
+        "aiAdvisory":  {
+                           "banner":  "[AI ADVISORY | Not a control action | Rule engine has final authority]",
+                           "label":  "AI ADVISORY",
+                           "notice":  "Not a control action",
+                           "authority":  "Rule engine has final authority",
+                           "confidence":  "LOW",
+                           "riskScore":  55,
+                           "analysis":  "VIBRATION sensor on device MCH-VIBR-COMPRESSOR-003 is WARNING with value 5.70. Threshold exceeded, immediate attention required.",
+                           "summary":  "VIBRATION sensor on device MCH-VIBR-COMPRESSOR-003 is WARNING with value 5.70. Threshold exceeded, immediate attention required.",
+                           "recommendedAction":  "Inspect motor or pump for mechanical imbalance or bearing wear.",
+                           "dataSource":  "RULE_BASED",
+                           "validFor":  "30 mi...
+
+5) Trend chart source endpoint
+GET http://localhost:8080/api/machines/MCH-VIBR-COMPRESSOR-003/trend?hours=24
+[
+    {
+        "timestamp":  "2026-03-11T18:48:37.633770956Z",
+        "sensorType":  "VIBRATION",
+        "value":  8.1,
+        "status":  "WARNING",
+        "machineClass":  "compressor",
+        "source":  "DYNAMODB_FALLBACK"
+    },
+    {
+        "timestamp":  "2026-03-11T18:48:38.230407872Z",
+        "sensorType":  "VIBRATION",
+        "value":  8.1,
+        "status":  "WARNING",
+        "machineClass":  "compressor",
+        "source":  "DYNAMODB_FALLBACK"
+    },
+    {
+        "timestamp":  "2026-03-12T02:03:52.733351200Z",
+        "sensorType":  "VIBRATION",
+        "value":  5.7,
+        "status":  "WARNING",
+        "machineClass":  "compressor",
+        "source":  "DYNAMODB_FALLBACK"
+    }
+]
+
+6) OEE panel source endpoint
+GET http://localhost:8080/api/kpi/oee/MCH-VIBR-COMPRESSOR-003
+{
+    "machineId":  "MCH-VIBR-COMPRESSOR-003",
+    "hours":  24,
+    "availability":  0.9722,
+    "performance":  1.0,
+    "quality":  0.3889,
+    "oeePercent":  37.81,
+    "totalEvents":  36,
+    "source":  "DYNAMODB_FALLBACK"
+}
+
+7) Advisory panel field contract
+aiAdvisory object keys observed: banner, label, notice, authority, confidence, riskScore, analysis, summary, recommendedAction, dataSource, validFor, calibrated, consensus
+
+8) Test ingest events used
+{
+    "message":  "Event ingested successfully",
+    "deviceId":  "MCH-VIBR-COMPRESSOR-003",
+    "timestamp":  "2026-03-12T02:03:52.733351200Z",
+    "sensorType":  "VIBRATION",
+    "value":  5.7,
+    "status":  "WARNING",
+    "alertFired":  true,
+    "aiRiskScore":  55,
+    "weatherNote":  "Weather data unavailable",
+    "llmConsensus":  "RULE_BASED",
+    "aiAdvisory":  {
+                       "banner":  "[AI ADVISORY | Not a control action | Rule engine has final authority]",
+                       "label":  "AI ADVISORY",
+                       "notice":  "Not a control action",
+                       "authority":  "Rule engine has final authority",
+                       "confidence":  "LOW",
+                       "riskScore":  55,
+                       "analysis":  "VIBRATION sensor on device MCH-VIBR-COMPRESSOR-003 is WARNING with value 5.70. Threshold exceeded, immediate attention required.",
+                       "summary":  "VIBRATION sensor on device MCH-VIBR-COMPRESSOR-003 is WARNING with value 5.70. Threshold exceeded, immediate attention required.",
+                       "recommendedAction":  "Inspect motor or pump for mechanical imbalance or bearing wear.",
+                       "dataSource":  "RULE_BASED",
+                       "validFor":  "30 minutes",
+                       "calibrated":  false,
+                       "consensus":  "RULE_BASED"
+                   }
+}
+{
+    "message":  "Event ingested successfully",
+    "deviceId":  "MCH-TEMP-BOILER-011",
+    "timestamp":  "2026-03-12T02:03:57.918095600Z",
+    "sensorType":  "TEMPERATURE",
+    "value":  41.2,
+    "status":  "WARNING",
+    "alertFired":  true,
+    "aiRiskScore":  55,
+    "weatherNote":  "Weather data unavailable",
+    "llmConsensus":  "RULE_BASED",
+    "aiAdvisory":  {
+                       "banner":  "[AI ADVISORY | Not a control action | Rule engine has final authority]",
+                       "label":  "AI ADVISORY",
+                       "notice":  "Not a control action",
+                       "authority":  "Rule engine has final authority",
+                       "confidence":  "LOW",
+                       "riskScore":  55,
+                       "analysis":  "TEMPERATURE sensor on device MCH-TEMP-BOILER-011 is WARNING with value 41.20. Threshold exceeded, immediate attention required.",
+                       "summary":  "TEMPERATURE sensor on device MCH-TEMP-BOILER-011 is WARNING with value 41.20. Threshold exceeded, immediate attention required.",
+                       "recommendedAction":  "Check cooling system and reduce load. Inspect bearings for lubrication.",
+                       "dataSource":  "RULE_BASED",
+                       "validFor":  "30 minutes",
+                       "calibrated":  false,
+                       "consensus":  "RULE_BASED"
+                   }
+}
+
+9) Day-4 API mismatch fixes applied in machine.html
+- Severity mapping now uses m.currentSeverity || m.severity || m.status || "NORMAL"
+- OEE mapping now uses oee.oeePercent fallback when oee field is absent
+- Platform mapping now supports ruleEngine + ec2State camelCase fields
+- Trend chart X-axis now converts ISO timestamps to epoch millis via Date.parse
