@@ -1,4 +1,4 @@
-﻿# ARGODREIGN IoT Alert Engine
+# ARGUS — Event-Driven Industrial IoT Monitoring Platform
 
 ## Sprint Status
 
@@ -20,7 +20,7 @@
   - `docs/ASYNC_OFFICE_MODE.md`
   - `docs/REVIEW_INBOX.md`
 
-## ðŸ“± Start/Stop from Phone
+## Start/Stop from Phone
 
 Step 1 (one time on laptop):
 ```bash
@@ -30,11 +30,11 @@ bash scripts/setup-ec2.sh
 - Add all secrets listed in `docs/GITHUB_SECRETS_SETUP.md`.
 
 Step 2 (from phone anytime):
-- GitHub app -> Actions -> `ðŸ“± START IoT Server` -> Run workflow
+- GitHub app -> Actions -> `START IoT Server` -> Run workflow
 - Wait ~3 minutes -> open URL from workflow summary
 
-Step 3 (after demo â€” ALWAYS DO THIS):
-- GitHub app -> Actions -> `ðŸ“± STOP IoT Server` -> Run workflow
+Step 3 (after demo - ALWAYS DO THIS):
+- GitHub app -> Actions -> `STOP IoT Server` -> Run workflow
 - Stops billing immediately
 
 Cost target: `~$7 total for 6 months` at `~1 hr/day` usage.
@@ -66,7 +66,7 @@ Cost target: `~$7 total for 6 months` at `~1 hr/day` usage.
   - `docs/adr/ADR-003-llm-advisory-labels-mandatory.md`
   - `docs/adr/ADR-004-athena-partitioning-strategy.md`
 
-> Budget note: For this repository's demo budget mode, use EC2 start/stop workflows and avoid always-on ECS/ALB.
+> Budget note: For this repository's demo budget mode, use EC2 start/stop workflows and avoid always-on infrastructure.
 
 Production IoT monitoring backend with:
 - 22 sensor threshold evaluation
@@ -74,7 +74,7 @@ Production IoT monitoring backend with:
 - AI risk analysis (Gemini + rule fallback)
 - Alerting via SNS + SQS
 - Persistence in DynamoDB
-- Live cache in Redis
+- In-memory response cache with S3 LLM analysis cache
 - Built-in dashboard UI
 
 ## What was added now
@@ -82,15 +82,13 @@ Production IoT monitoring backend with:
 - New API: `GET /api/v1/device/{deviceId}/prediction?forecastSteps=6`
 - New built-in UI: `http://localhost:8080/` (live dashboard)
 - Cloud-lite runtime defaults:
-  - SQL auto-config disabled by default (no mandatory MySQL in cloud demo mode)
-  - Redis cache has in-memory fallback for low-cost demo operation
+  - SQL auto-config disabled by default
+  - In-memory cache (no Redis dependency)
 - Secure env template: `.env.example`
 - Deployment scripts:
-  - `scripts/deploy-ecs.ps1`
   - `scripts/bootstrap-aws.sh`
   - `scripts/setup-github-oidc.ps1`
-  - `scripts/start-demo.ps1`
-  - `scripts/stop-demo.ps1`
+  - `scripts/setup-ec2.sh`
 
 ## 1. Local run with Docker
 
@@ -116,21 +114,13 @@ docker-compose up --build
 - Swagger: `http://localhost:8080/swagger-ui.html`
 - Health: `http://localhost:8080/api/v1/health`
 
-## 2. Connect your S3 dummy data through Lambda
+## 2. Connect S3 sensor data through Lambda
 
-Your file path mentioned: `C:\Users\pavan\Desktop\iot_sensor_data_100days.csv`
-
-Flow:
-1. Upload CSV to S3 bucket key like `data/iot_sensor_data_100days.csv`
-2. Deploy Lambda from `lambda/lambda_function.py`
-3. Set Lambda env vars:
-- `S3_BUCKET`
-- `CSV_KEY`
-- `SQS_URL`
-- `BATCH_SIZE`
-4. Trigger Lambda with payload `{ "command": "CONTINUE" }`
-
-Spring service polls SQS every 10 seconds and ingests into the platform.
+Upload your CSV to S3:
+`s3://iot-alert-engine-mahindra/data/raw/your_file.csv`
+Deploy Lambda from `lambda/rule_engine/handler.py`
+Set env vars: `S3_BUCKET`, `CSV_KEY`, `SQS_URL`, `BATCH_SIZE`
+Trigger: `{ "command": "CONTINUE" }`
 
 ## 3. AWS infra bootstrap
 
@@ -144,58 +134,21 @@ This creates:
 - SNS topic `iot-alerts`
 - SQS FIFO queue + DLQ
 
-## 4. Legacy ECS deployment (not recommended for this budget mode)
+## 4. AWS infrastructure (EC2 t3.micro)
+This project runs on EC2 t3.micro with start/stop via GitHub Actions.
+No ECS, no ALB, no NAT Gateway. Cost = $0 when stopped.
+Setup: `bash scripts/setup-ec2.sh`
 
-PowerShell example:
-```powershell
-./scripts/deploy-ecs.ps1 \
-  -AwsRegion ap-south-1 \
-  -AwsAccountId 123456789012 \
-  -EcrRepo iot-alert-engine \
-  -EcsCluster iot-cluster \
-  -EcsService iot-api \
-  -ImageTag v2
-```
+## 5. Demo control (from phone)
+Start: GitHub app -> Actions -> START IoT Server -> Run workflow
+Stop:  GitHub app -> Actions -> STOP IoT Server -> Run workflow
 
-Script will:
-1. Build Docker image
-2. Push image to ECR
-3. Force ECS rolling deployment
-
-## 5. Legacy ECS demo control scripts
-
-Start demo service:
-```powershell
-./scripts/start-demo.ps1 \
-  -AwsRegion ap-south-1 \
-  -EcsCluster iot-cluster \
-  -EcsService iot-api \
-  -DesiredCount 1 \
-  -WaitForStable
-```
-
-Stop demo service:
-```powershell
-./scripts/stop-demo.ps1 \
-  -AwsRegion ap-south-1 \
-  -EcsCluster iot-cluster \
-  -EcsService iot-api \
-  -WaitForStable
-```
-
-Note:
-- `stop-demo` sets ECS `desiredCount=0`.
-- ALB, NAT Gateway, and public IPv4 can still incur charges while they exist.
-
-## 6. Recommended production setup
-
-- Use ECS Task IAM Role instead of static AWS keys
-- Put API keys in AWS Secrets Manager or SSM Parameter Store
-- Add CloudWatch alarms for:
-  - ECS service unhealthy tasks
-  - SQS queue depth
-  - DynamoDB throttling
-- Add WAF + ALB if public internet traffic is expected
+## 6. Architecture constraints
+- Rule engine: AWS Lambda only (always-on, serverless)
+- App server: EC2 t3.micro (start/stop for cost control)
+- Storage: S3 + Athena for history. DynamoDB for alerts only.
+- No ECS, no ALB, no Redis, no MySQL, no NAT Gateway.
+- LLM: Gemini advisory only. AiAdvisoryWrapper on all outputs.
 
 ## 7. Useful API checks
 
