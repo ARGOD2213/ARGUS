@@ -346,10 +346,18 @@
     }
 
     function renderSummaryCards(metrics) {
+      const unackedCount = metrics.unacknowledged || 0;
       document.getElementById("summaryCards").innerHTML = `
         <div class="metric">
           <div class="label">Active CRITICAL Alerts</div>
-          <div class="value">${metrics.criticalAlerts}</div>
+          <div class="value" style="color:#f87171;">${metrics.criticalAlerts}</div>
+          ${unackedCount > 0 ? `
+          <div style="margin-top:8px;background:#fee2e2;border-radius:8px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px;">
+            <span style="color:#dc2626;font-size:12px;font-weight:700;">⚠ ${unackedCount} unacknowledged</span>
+          </div>` : `
+          <div style="margin-top:8px;">
+            <span style="color:#16a34a;font-size:12px;">✓ All acknowledged</span>
+          </div>`}
         </div>
         <div class="metric">
           <div class="label">Plant OEE Average</div>
@@ -409,12 +417,13 @@
 
     async function refreshOverview() {
       try {
-        const [platform, machines, weather, compliance, nh3Zones] = await Promise.all([
+        const [platform, machines, weather, compliance, nh3Zones, unacknowledgedAlerts] = await Promise.all([
           fetchJson("/api/platform/status"),
           fetchJson("/api/machines"),
           fetchJson("/api/v1/weather/current"),
           fetchJson("/api/v1/compliance/ocs-score"),
-          fetchJson("/api/v1/safety/nh3-zones")
+          fetchJson("/api/v1/safety/nh3-zones"),
+          fetchJson("/api/v1/alerts/unacknowledged").catch(() => [])
         ]);
 
         renderPlatformStatus(platform);
@@ -439,6 +448,7 @@
 
         renderSummaryCards({
           criticalAlerts,
+          unacknowledged: Array.isArray(unacknowledgedAlerts) ? unacknowledgedAlerts.length : 0,
           plantOee,
           wbgt: Number(weather.wbgt || 0),
           compliance: Number(compliance.overallComplianceScore || 0)

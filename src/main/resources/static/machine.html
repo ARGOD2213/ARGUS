@@ -240,6 +240,35 @@
       background: #fffbeb;
     }
 
+    /* ACK Button & Escalation Styles */
+    .alert-card { background: #1e293b; border-radius: 10px;
+                  padding: 14px; margin-bottom: 10px;
+                  border-left: 4px solid #475569; }
+    .alert-card.critical { border-left-color: #dc2626; background: #0f172a; }
+    .alert-card.warning  { border-left-color: #d97706; background: #0f172a; }
+    .alert-header { display: flex; align-items: center;
+                    gap: 10px; flex-wrap: wrap; color: #e2e8f0; }
+    .severity-badge { font-size: 11px; font-weight: 700;
+                      padding: 3px 10px; border-radius: 12px; }
+    .severity-badge.critical { background: #450a0a; color: #f87171; }
+    .severity-badge.warning  { background: #431407; color: #fb923c; }
+    .sensor-label { font-size: 13px; color: #e2e8f0; font-weight: 600; }
+    .alert-value  { font-size: 13px; color: #94a3b8; }
+    .alert-time   { font-size: 11px; color: #475569; margin-left: auto; }
+    .ack-row { display: flex; align-items: center; gap: 12px;
+               margin-top: 10px; }
+    .btn-ack { background: #2563eb; color: white; border: none;
+               border-radius: 6px; padding: 6px 14px; font-size: 12px;
+               font-weight: 600; cursor: pointer; }
+    .btn-ack:hover { background: #1d4ed8; }
+    .btn-ack:disabled { background: #1e3a5f; color: #64748b; cursor: default; }
+    .ack-timer { font-size: 11px; color: #ef4444; font-weight: 500; }
+    .ack-timer.escalating { color: #dc2626; font-weight: 700;
+                            animation: pulse 1s infinite; }
+    @keyframes pulse {
+      0%,100% { opacity: 1; } 50% { opacity: 0.5; }
+    }
+
     .advisory-panel {
       border: 1px solid #cbd5e1;
       border-radius: 18px;
@@ -556,20 +585,111 @@
       }).join("") || `<div class="empty">No sensor trend points available for legend rendering.</div>`;
     }
 
+    // Escalation tracking: alertId -> { startTime, timer, escalated }
+    const escalationTrackers = {};
+
+    function startEscalationTimer(alertId, machineId, sensorType, value) {
+      if (escalationTrackers[alertId]) return; // already tracking
+      const startTime = Date.now();
+      escalationTrackers[alertId] = {
+        startTime,
+        escalated: false,
+        timer: setInterval(() => {
+          const ageMin = Math.floor((Date.now() - startTime) / 60000);
+          const timerEl = document.getElementById(`timer-${alertId}`);
+          if (!timerEl) {
+            clearInterval(escalationTrackers[alertId].timer);
+            return;
+          }
+          timerEl.textContent = `Unacknowledged ${ageMin}m`;
+
+          // Turn amber at 3 min
+          if (ageMin >= 3) timerEl.classList.add('escalating');
+
+          // Auto-escalate at 5 min
+          if (ageMin >= 5 && !escalationTrackers[alertId].escalated) {
+            escalationTrackers[alertId].escalated = true;
+            triggerEscalation(alertId, machineId, sensorType, value);
+            timerEl.textContent = `ESCALATED after ${ageMin}m`;
+          }
+        }, 30000) // update every 30 seconds
+      };
+    }
+
+    async function triggerEscalation(alertId, machineId, sensorType, value) {
+      try {
+        await fetch(`/api/v1/alerts/${alertId}/escalate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ machineId, sensorType, value })
+        });
+        console.log(`Escalation triggered for ${alertId}`);
+      } catch (e) {
+        console.error('Escalation failed:', e);
+      }
+    }
+
+    async function acknowledgeAlert(alertId, machineId, sensorType, value) {
+      const operatorId = 'OP-01'; // Sprint 5: replace with session username
+      const note = prompt(
+        `Acknowledge alert ${sensorType} on ${machineId}?\n\nEnter observation note:`,
+        ''
+      );
+      if (note === null) return; // cancelled
+
+      try {
+        const r = await fetch(`/api/v1/alerts/${alertId}/acknowledge`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ operatorId, note })
+        });
+
+        if (r.ok) {
+          // Stop escalation timer
+          if (escalationTrackers[alertId]) {
+            clearInterval(escalationTrackers[alertId].timer);
+            delete escalationTrackers[alertId];
+          }
+
+          // Update UI — replace ACK row with confirmation
+          const ackRow = document.getElementById(`ack-row-${alertId}`);
+          if (ackRow) {
+            ackRow.innerHTML = `
+              <span style="color:#4ade80;font-size:12px;font-weight:600;">
+                ✓ Acknowledged by ${operatorId}
+              </span>
+              <span style="color:#64748b;font-size:11px;margin-left:8px;">
+                "${note}"
+              </span>`;
+          }
+        }
+      } catch (e) {
+        alert('Acknowledgement failed — check network connection.');
+      }
+    }
+
     function renderAlerts(alerts) {
       return alerts.map(alert => {
         const severity = (alert.status || "NORMAL").toUpperCase();
-        const cardClass = severity === "CRITICAL" ? "alert-card red-border"
-          : severity === "WARNING" ? "alert-card amber-border"
-          : "alert-card";
+        const isCritical = severity === 'CRITICAL';
+        const alertId    = alert.alertId || (alert.machineId + '_' + alert.timestamp);
+        const ageMs      = Date.now() - new Date(alert.timestamp).getTime();
+        const ageMin     = Math.floor(ageMs / 60000);
+        const machineId  = alert.machineId || selectedMachineId || "-";
+
         return `
-          <div class="${cardClass}">
-            <div class="alert-row">
-              <span class="${badgeClass(severity)}">${escapeHtml(severity)}</span>
-              <span class="muted">${escapeHtml(new Date(alert.timestamp).toLocaleString("en-IN"))}</span>
+          <div class="alert-card ${isCritical ? 'critical' : 'warning'}" id="alert-${alertId}">
+            <div class="alert-header">
+              <span class="severity-badge ${severity.toLowerCase()}">${escapeHtml(severity)}</span>
+              <span class="sensor-label">${escapeHtml(alert.sensorType || "UNKNOWN")}</span>
+              <span class="alert-value">${Number(alert.value || 0).toFixed(2)}</span>
+              <span class="alert-time">${escapeHtml(new Date(alert.timestamp).toLocaleString("en-IN"))}</span>
             </div>
-            <div style="margin-top:10px;font-weight:700;">${escapeHtml(alert.sensorType || "UNKNOWN")} | ${Number(alert.value || 0).toFixed(2)}</div>
-            <div class="muted" style="margin-top:6px;">Machine: ${escapeHtml(alert.machineId || selectedMachineId || "-")}</div>
+            ${isCritical ? `
+            <div class="ack-row" id="ack-row-${alertId}">
+              <button class="btn-ack" onclick="acknowledgeAlert('${alertId}', '${machineId}', '${escapeHtml(alert.sensorType || "UNKNOWN")}', '${Number(alert.value || 0).toFixed(2)}')">✓ Acknowledge</button>
+              <span class="ack-timer" id="timer-${alertId}">Unacknowledged ${ageMin}m</span>
+            </div>` : ''}
           </div>
         `;
       }).join("") || `<div class="empty">No active alerts for the selected machine.</div>`;
@@ -664,6 +784,14 @@
       `;
 
       renderTrendChart(trend);
+      
+      // Start escalation timers for CRITICAL alerts
+      alerts.forEach(alert => {
+        if ((alert.status || "NORMAL").toUpperCase() === 'CRITICAL') {
+          const alertId = alert.alertId || (alert.machineId + '_' + alert.timestamp);
+          startEscalationTimer(alertId, alert.machineId || selectedMachineId, alert.sensorType || "UNKNOWN", Number(alert.value || 0).toFixed(2));
+        }
+      });
     }
 
     async function loadMachineDetail(machineId) {
