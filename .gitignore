@@ -21,3 +21,4 @@ docs/SPRINT1_STRICT_AUDIT_PROMPT.md
 
 # Build artifacts
 build/
+.vscode/
