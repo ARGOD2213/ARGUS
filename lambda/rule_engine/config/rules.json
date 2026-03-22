@@ -12,7 +12,10 @@
       "severity": "CRITICAL",
       "title": "NH3 leak concentration above area limit",
       "recommendation": "Trigger emergency response and isolate leak source immediately.",
-      "reference": "Factory Act safety controls + plant emergency protocol"
+      "reference": "Factory Act safety controls + plant emergency protocol",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md",
+      "iec61511Note": "Rule engine is advisory platform. Not a certified SIS."
     },
     {
       "id": "COMP_VIBRATION_GT_7_1",
@@ -23,7 +26,10 @@
       "severity": "CRITICAL",
       "title": "Compressor vibration exceeds critical band",
       "recommendation": "Reduce load and inspect alignment/bearing condition.",
-      "reference": "ISO 10816-3 severity guidance"
+      "reference": "ISO 10816-3 severity guidance",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md",
+      "iec61511Note": "Rule engine is advisory platform. Not a certified SIS."
     },
     {
       "id": "BFW_PUMP_VIBRATION_GT_4_5",
@@ -34,7 +40,10 @@
       "severity": "WARNING",
       "title": "Pump vibration trend above warning band",
       "recommendation": "Plan inspection within shift and verify coupling health.",
-      "reference": "ISO 10816 warning guidance"
+      "reference": "ISO 10816 warning guidance",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md",
+      "iec61511Note": "Rule engine is advisory platform. Not a certified SIS."
     },
     {
       "id": "BEARING_TEMP_GT_72",
@@ -44,7 +53,10 @@
       "severity": "WARNING",
       "title": "Bearing temperature elevated",
       "recommendation": "Check lubrication and cooling before continued high-load operation.",
-      "reference": "Asset reliability baseline"
+      "reference": "Asset reliability baseline",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md",
+      "iec61511Note": "Rule engine is advisory platform. Not a certified SIS."
     },
     {
       "id": "REFORMER_TEMP_GT_900",
@@ -55,7 +67,10 @@
       "severity": "CRITICAL",
       "title": "Reformer section over-temperature",
       "recommendation": "Initiate burner and feed checks per emergency SOP.",
-      "reference": "Reformer tube integrity control limits"
+      "reference": "Reformer tube integrity control limits",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md",
+      "iec61511Note": "Rule engine is advisory platform. Not a certified SIS."
     },
     {
       "id": "UREA_HP_REACTOR_TEMP_GT_195",
@@ -66,7 +81,10 @@
       "severity": "CRITICAL",
       "title": "HP reactor temperature outside envelope",
       "recommendation": "Escalate to panel operator and verify process condition immediately.",
-      "reference": "Urea high-pressure operating envelope"
+      "reference": "Urea high-pressure operating envelope",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md",
+      "iec61511Note": "Rule engine is advisory platform. Not a certified SIS."
     },
     {
       "id": "INSTRUMENT_AIR_PRESSURE_LT_5",
@@ -77,7 +95,10 @@
       "severity": "CRITICAL",
       "title": "Instrument air train pressure collapse risk",
       "recommendation": "Confirm compressor support systems and switch to standby line.",
-      "reference": "Instrument air continuity requirements"
+      "reference": "Instrument air continuity requirements",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md",
+      "iec61511Note": "Rule engine is advisory platform. Not a certified SIS."
     },
     {
       "id": "POWER_FACTOR_LT_0_85",
@@ -87,7 +108,10 @@
       "severity": "WARNING",
       "title": "Power factor below warning threshold",
       "recommendation": "Check motor loading and capacitor compensation.",
-      "reference": "Utility reliability standard"
+      "reference": "Utility reliability standard",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md",
+      "iec61511Note": "Rule engine is advisory platform. Not a certified SIS."
     },
     {
       "id": "WBGT_PROXY_TEMP_GT_38",
@@ -98,7 +122,10 @@
       "severity": "WARNING",
       "title": "Heat stress watch condition",
       "recommendation": "Apply hydration/rest cycle and reduce exposure duration.",
-      "reference": "Occupational heat stress policy"
+      "reference": "Occupational heat stress policy",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md",
+      "iec61511Note": "Rule engine is advisory platform. Not a certified SIS."
     },
     {
       "id": "PLATFORM_DLQ_DEPTH_GT_0",
@@ -108,7 +135,58 @@
       "severity": "CRITICAL",
       "title": "DLQ has undelivered safety messages",
       "recommendation": "Inspect failed event payloads and clear consumer errors immediately.",
-      "reference": "SQS reliability control"
+      "reference": "SQS reliability control",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md",
+      "iec61511Note": "Rule engine is advisory platform. Not a certified SIS."
+    },
+    {
+      "id": "STACK_NH3_MG_NM3_GT_50",
+      "sensor": "STACK_NH3_MG_NM3",
+      "op": "gt",
+      "warn": 30,
+      "crit": 50,
+      "unit": "mg/Nm3",
+      "description": "Stack NH3 emission — CPCB limit 50 mg/Nm3",
+      "regulation": "Environment Protection Act 1986 + CPCB",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md"
+    },
+    {
+      "id": "STACK_NOX_PPM_GT_150",
+      "sensor": "STACK_NOX_PPM",
+      "op": "gt",
+      "warn": 100,
+      "crit": 150,
+      "unit": "ppm",
+      "description": "Stack NOx emission — CPCB guideline 150 ppm",
+      "regulation": "Environment Protection Act 1986 + CPCB",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md"
+    },
+    {
+      "id": "EFFLUENT_PH_LT_6_5",
+      "sensor": "EFFLUENT_PH",
+      "op": "lt",
+      "warn": 6.5,
+      "crit": 6.0,
+      "unit": "pH",
+      "description": "Effluent pH below acceptable range — CPCB 6.5-9.0",
+      "regulation": "Environment Protection Act 1986",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md"
+    },
+    {
+      "id": "EFFLUENT_NH3_MG_L_GT_50",
+      "sensor": "EFFLUENT_NH3_MG_L",
+      "op": "gt",
+      "warn": 30,
+      "crit": 50,
+      "unit": "mg/L",
+      "description": "Effluent NH3 discharge — CPCB limit 50 mg/L",
+      "regulation": "Environment Protection Act 1986",
+      "silStatus": "NOT_ASSESSED",
+      "silReference": "docs/sil/SIL_ASSESSMENT_REGISTER.md"
     }
   ]
 }

@@ -156,6 +156,24 @@ public class ComplianceController {
         );
     }
 
+    @GetMapping("/sil-status")
+    public ResponseEntity<Map<String,Object>> getSilStatus() {
+        Map<String,Object> result = new java.util.LinkedHashMap<>();
+        result.put("standard", "IEC 61511:2016 Clause 9.3");
+        result.put("platformStatus", "DEMO_PILOT — not connected to live plant");
+        result.put("lopaStatus", "NOT_COMPLETED");
+        result.put("sifsRegistered", 7);
+        result.put("sifsAssessed", 0);
+        result.put("sifsNotAssessed", 7);
+        result.put("productionGate", "SIL assessment required before production deployment");
+        result.put("registerLocation", "docs/sil/SIL_ASSESSMENT_REGISTER.md");
+        result.put("lopaTemplate", "docs/sil/LOPA_TEMPLATE.md");
+        result.put("architectureNote", "ADR-001: Rule engine is AWS Lambda. " +
+            "Platform is advisory only. Not a certified SIS.");
+        result.put("checkedAt", java.time.Instant.now().toString());
+        return ResponseEntity.ok(result);
+    }
+
     record ComplianceReport(
         String reportTitle, String period, String generatedAt,
         double ocsScore, double machineCompliance,
