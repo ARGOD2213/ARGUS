@@ -1,210 +1,144 @@
 # ARGUS — Event-Driven Industrial IoT Monitoring Platform
 
+Industrial decision-support platform for continuous process facilities. Event-driven alerting, AI advisory analysis, and operational workflow management.
+
+---
+
 ## Sprint Status
 
-- Sprint 1: `CLOSED`
-- Sprint 2: `CLOSED` (Day 1 to Day 14 evidence committed)
-- Sprint 3: `CLOSED` (RB-09, RB-15, all dashboards fully wired)
-- Sprint 4: `CLOSED` (All tracks completed - phone control plane, dashboards, integrations)
-- Sprint 5: `CLOSED` (Autonomous delivery: PTW workflow, compliance export, handover history, AI feedback loop)
-- Active dashboards:
-  - `/index.html` (overview)
-  - `/machine.html` (machine-wise + AI advisory feedback)
-  - `/safety.html` (human safety + PTW status)
-  - `/plant.html` (plant-wide)
-  - `/compliance.html` (compliance + evidence export)
-  - `/ptw.html` (permit-to-work management)
-  - `/handover.html` (shift handover notes)
+| Sprint | Status | Key Deliverables |
+|--------|--------|-----------------|
+| Sprint 1 | CLOSED | Data foundation, Lambda rule engine, schema |
+| Sprint 2 | CLOSED | 5 dashboards, LLM pipeline, sensor health |
+| Sprint 3 | CLOSED | Safety backends (WBGT, NH3 TWA, FAID-lite, dispersion) |
+| Sprint 4 | CLOSED | Phone control, ACK/escalation, handover, zone risk, timeline |
+| Sprint 5 | CLOSED | PTW workflow, compliance export, AI feedback loop |
+| Sprint 6 | CLOSED | SIL register, CEMS monitoring, edge layer ADR |
+| Sprint 7 | CLOSED | Edge agent, ring buffer, offline rules, ops.html edge status |
+| Sprint 8 | PENDING | Real OPC-UA integration, load testing, SIL LOPA completion |
 
-## Mobile Browser Space
+---
 
-- Open this from phone for live handoff updates:
-  - `docs/MOBILE_CHAT_SPACE.md`
-- Async no-desktop mode:
-  - `docs/ASYNC_OFFICE_MODE.md`
-  - `docs/REVIEW_INBOX.md`
+## Architecture
 
-## Start/Stop from Phone
-
-Step 1 (one time on laptop):
-```bash
-bash scripts/setup-ec2.sh
 ```
-- Note the `EC2_INSTANCE_ID` printed by script.
-- Add all secrets listed in `docs/GITHUB_SECRETS_SETUP.md`.
+Phone (S3 ops.html)
+  → API Gateway + Lambda (start/stop EC2)
+    → EC2 t3.micro — Spring Boot 3.2
+        → DynamoDB (alerts, PTW, ACK, votes)
+        → S3 (handover notes, LLM cache, audit artifacts)
+        → Athena (historical sensor data)
+        → Gemini API (AI advisory — AiAdvisoryWrapper enforced)
+  → Lambda rule engine (always-on, SQS trigger)
+        → SNS iot-alerts (CRITICAL/WARNING notifications)
+```
 
-Step 2 (from phone anytime):
-- GitHub app -> Actions -> `START IoT Server` -> Run workflow
-- Wait ~3 minutes -> open URL from workflow summary
+Rule engine is AWS Lambda only (ADR-001).  
+Zero write path to OT layer (ADR-002).  
+All LLM output uses AiAdvisoryWrapper (ADR-003).  
+Athena + S3 for history, DynamoDB for events (ADR-004).  
 
-Step 3 (after demo - ALWAYS DO THIS):
-- GitHub app -> Actions -> `STOP IoT Server` -> Run workflow
-- Stops billing immediately
+No ECS. No ALB. No NAT Gateway. No Redis. No MySQL.
 
-Cost target: `~$7 total for 6 months` at `~1 hr/day` usage.
+---
 
-## Sprint 1 foundation (current)
+## Dashboards (8 live)
 
-- Data contract and validation:
-  - `docs/schema/sensor_event_schema.json`
-  - `docs/schema/source_to_canonical_mapping.json`
-  - `scripts/validate-industrial-csv.ps1`
-  - `docs/SPRINT1_API_ENDPOINTS.md`
-- Partitioned analytics path (S3 + Athena):
-  - `scripts/partition-industrial-csv.ps1`
-  - `scripts/setup-athena-partitioned.ps1`
-  - `docs/SPRINT1_DATA_FOUNDATION_RUNBOOK.md`
-- Serverless safety rule engine:
-  - `lambda/rule_engine/handler.py`
-  - `lambda/rule_engine/config/rules.json`
-  - `scripts/deploy-rule-engine-lambda.ps1`
-  - `scripts/setup-rule-engine-trigger.ps1`
-  - `docs/RULE_ENGINE_LAMBDA_SETUP.md`
-- Guardrails:
-  - `scripts/setup-budget-guardrails.ps1`
-  - `scripts/setup-ec2-autostop-alarm.ps1`
-  - `docs/SPRINT1_GUARDRAILS.md`
-- Architecture decisions (ADRs):
-  - `docs/adr/ADR-001-rule-engine-lambda.md`
-  - `docs/adr/ADR-002-no-ot-write-path.md`
-  - `docs/adr/ADR-003-llm-advisory-labels-mandatory.md`
-  - `docs/adr/ADR-004-athena-partitioning-strategy.md`
+| URL | Purpose |
+|-----|---------|
+| /index.html | Overview — KPI cards, alert feed, platform status |
+| /machine.html | Machine grid, trend chart, OEE, ACK, AI advisory |
+| /safety.html | WBGT, NH3 zones, fatigue score, zone risk, PTW status |
+| /plant.html | Cascade indicator, zone risk cards, weather bar |
+| /compliance.html | OCS score, SIL status, CEMS, audit report |
+| /handover.html | Shift summary, AI note, operator notes history |
+| /timeline.html | Chronological event log per machine |
+| /ptw.html | Permit-to-Work issue form and live permit board |
 
-> Budget note: For this repository's demo budget mode, use EC2 start/stop workflows and avoid always-on infrastructure.
+---
 
-Production IoT monitoring backend with:
-- 22 sensor threshold evaluation
-- Weather-aware enrichment (OpenWeatherMap)
-- AI risk analysis (Gemini + rule fallback)
-- Alerting via SNS + SQS
-- Persistence in DynamoDB
-- In-memory response cache with S3 LLM analysis cache
-- Built-in dashboard UI
+## Phone Start (Zero Friction)
 
-## What was added now
-- New API: `GET /api/v1/dashboard/overview`
-- New API: `GET /api/v1/device/{deviceId}/prediction?forecastSteps=6`
-- New built-in UI: `http://localhost:8080/` (live dashboard)
-- Cloud-lite runtime defaults:
-  - SQL auto-config disabled by default
-  - In-memory cache (no Redis dependency)
-- Secure env template: `.env.example`
-- Deployment scripts:
-  - `scripts/bootstrap-aws.sh`
-  - `scripts/setup-github-oidc.ps1`
-  - `scripts/setup-ec2.sh`
+1. Open bookmarked S3 ops URL on phone
+2. Tap Start ARGUS
+3. Wait ~90 seconds for health check
+4. Tap Open Dashboard
+5. Enter username + password once per session
 
-## Sprint 5 Autonomous Delivery
-- **Permit-to-Work (PTW) Workflow:** Complete digital PTW management with state machine
-  - API: `/api/v1/ptw/*` (CRUD operations, state transitions)
-  - UI: `/ptw.html` (mobile-responsive permit management)
-  - Integration: Live PTW status in safety dashboard
-- **Compliance Evidence Export:** Structured compliance reporting
-  - API: `GET /api/v1/compliance/report` (JSON compliance data)
-  - UI: Enhanced compliance dashboard with export functionality
-- **Handover Notes History:** 30-day shift handover management
-  - API: `/api/v1/handover/notes` (date-based note retrieval)
-  - UI: `/handover.html` (date navigation, operator notes)
-- **AI Advisory Feedback Loop:** User feedback on AI recommendations
-  - API: `/api/v1/ai-feedback/*` (vote recording, statistics)
-  - UI: Vote buttons in machine dashboard AI advisory panel
-- **Evidence:** `docs/SPRINT5_CLOSURE_EVIDENCE.txt` (complete delivery documentation)
+One-time setup: `bash scripts/deploy-ops-control.sh <elastic-ip>`
 
-## 1. Local run with Docker
+---
 
-1. Copy env template:
+## Key API Endpoints
+
+```
+GET  /api/v1/health
+GET  /api/platform/status
+GET  /api/v1/dashboard/overview
+GET  /api/machines
+GET  /api/machines/{id}/alerts
+GET  /api/machines/{id}/trend
+POST /api/v1/alerts/{id}/acknowledge
+GET  /api/v1/alerts/unacknowledged
+GET  /api/v1/handover/summary
+POST /api/v1/handover/note
+GET  /api/v1/zones/risk
+GET  /api/v1/timeline
+GET  /api/v1/ptw/active
+POST /api/v1/ptw/issue
+PUT  /api/v1/ptw/{id}/status
+GET  /api/v1/compliance/report
+GET  /api/v1/compliance/sil-status
+GET  /api/v1/cems/current
+POST /api/v1/ai-feedback/vote
+```
+
+---
+
+## Safety Standards Referenced
+
+IEC 61511:2016 — SIL assessment register in docs/sil/  
+IEC 62443-3-3 — Edge layer cybersecurity (ADR-005)  
+ISO 7933:2004 — WBGT heat stress computation  
+ACGIH TLV-TWA — NH3 exposure limits (25 ppm)  
+EEMUA 191 — Alarm management (max 6/hr/operator)  
+ISA-18.2-2016 — Alarm rationalization  
+OISD-STD-105 — Permit-to-Work system  
+Environment Protection Act 1986 — CEMS monitoring  
+Factories Act 1948 — Worker safety compliance  
+
+---
+
+## Local Development
+
 ```bash
 cp .env.example .env
+# Fill ARGUS_USERNAME, ARGUS_PASSWORD, AWS credentials,
+# GEMINI_API_KEY, WEATHER_API_KEY
+mvn -q -DskipTests package
+java -jar target/iot-alert-engine-2.0.0.jar
+# Open http://localhost:8080
 ```
 
-2. Fill required values in `.env`:
-- `AWS_REGION`
-- `AWS_SNS_TOPIC_ARN`
-- `AWS_SQS_QUEUE_URL`
-- `AWS_SQS_DLQ_URL`
-- optional: `WEATHER_API_KEY`, `GEMINI_API_KEY`
+---
 
-3. Start stack:
-```bash
-docker-compose up --build
-```
+## Architecture Decisions
 
-4. Open:
-- Dashboard UI: `http://localhost:8080/`
-- Swagger: `http://localhost:8080/swagger-ui.html`
-- Health: `http://localhost:8080/api/v1/health`
+| ADR | Decision |
+|-----|---------|
+| ADR-001 | Rule engine = AWS Lambda only |
+| ADR-002 | Zero write path to OT layer |
+| ADR-003 | LLM output uses AiAdvisoryWrapper |
+| ADR-004 | Athena+S3 for history, DynamoDB for events |
+| ADR-005 | Edge layer architecture (Sprint 7 implementation) |
 
-## 2. Connect S3 sensor data through Lambda
+Full ADR documents: `docs/adr/`
 
-Upload your CSV to S3:
-`s3://iot-alert-engine-mahindra/data/raw/your_file.csv`
-Deploy Lambda from `lambda/rule_engine/handler.py`
-Set env vars: `S3_BUCKET`, `CSV_KEY`, `SQS_URL`, `BATCH_SIZE`
-Trigger: `{ "command": "CONTINUE" }`
+---
 
-## 3. AWS infra bootstrap
+## Cost Target
 
-If resources are not created yet:
-```bash
-bash scripts/bootstrap-aws.sh
-```
-
-This creates:
-- DynamoDB table `iot-sensor-events`
-- SNS topic `iot-alerts`
-- SQS FIFO queue + DLQ
-
-## 4. AWS infrastructure (EC2 t3.micro)
-This project runs on EC2 t3.micro with start/stop via GitHub Actions.
-No ECS, no ALB, no NAT Gateway. Cost = $0 when stopped.
-Setup: `bash scripts/setup-ec2.sh`
-
-## 5. Demo control (from phone)
-Start: GitHub app -> Actions -> START IoT Server -> Run workflow
-Stop:  GitHub app -> Actions -> STOP IoT Server -> Run workflow
-
-## 6. Architecture constraints
-- Rule engine: AWS Lambda only (always-on, serverless)
-- App server: EC2 t3.micro (start/stop for cost control)
-- Storage: S3 + Athena for history. DynamoDB for alerts only.
-- No ECS, no ALB, no Redis, no MySQL, no NAT Gateway.
-- LLM: Gemini advisory only. AiAdvisoryWrapper on all outputs.
-
-## 7. Useful API checks
-
-Ingest:
-```bash
-curl -X POST http://localhost:8080/api/v1/sensor/ingest \
-  -H "Content-Type: application/json" \
-  -d '{"deviceId":"MOTOR-01","sensorType":"TEMPERATURE","value":47.2,"unit":"C","location":"Line-A"}'
-```
-
-Overview:
-```bash
-curl http://localhost:8080/api/v1/dashboard/overview
-```
-
-Prediction:
-```bash
-curl "http://localhost:8080/api/v1/device/MOTOR-01/prediction?forecastSteps=8"
-```
-
-Sprint 1 operations endpoints:
-```bash
-curl http://localhost:8080/api/platform/status
-curl http://localhost:8080/api/admin/dlq-status
-curl http://localhost:8080/api/machines
-curl "http://localhost:8080/api/machines/MOTOR-01/alerts?limit=10"
-curl "http://localhost:8080/api/machines/MOTOR-01/trend?hours=24"
-curl "http://localhost:8080/api/kpi/oee/MOTOR-01?hours=24"
-```
-
-## 8. Mobile workflows (recommended)
-
-Use these workflows from GitHub mobile app:
-
-- `.github/workflows/start-server.yml`
-- `.github/workflows/stop-server.yml`
-
-Detailed one-time secrets setup:
-- `docs/GITHUB_SECRETS_SETUP.md`
+~$7 total for 6 months at ~1 hour/day usage.  
+EC2 t3.micro start/stop via GitHub Actions.  
+Lambda rule engine: always-on at $0 (free tier).  
+See `docs/SPRINT1_GUARDRAILS.md` for cost controls.

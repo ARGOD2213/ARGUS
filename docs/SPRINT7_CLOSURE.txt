@@ -1,0 +1,57 @@
+Sprint 7 Closure - ARGUS Industrial IoT Platform
+=================================================
+Closure date: 2026-03-22
+
+Track 1 - Edge Agent Python Package
+  Files: edge/agent/__init__.py
+         edge/agent/config.py
+         edge/agent/normaliser.py
+         edge/agent/ring_buffer.py
+         edge/agent/local_rules.py
+         edge/agent/sqs_forwarder.py
+         edge/agent/health_beacon.py
+         edge/agent/main.py
+         edge/agent/requirements.txt
+  Features:
+    MQTT subscriber with automatic reconnect
+    Data normaliser: canonical + legacy + topic-based extraction
+    SQLite ring buffer: 4hr capacity, chronological replay, purge
+    Local rule engine: same rules.json as Lambda where available (fallback only)
+    SQS forwarder: batch drain with retry
+    Health beacon: SNS heartbeat with DynamoDB ops status record
+    Graceful shutdown on SIGTERM/SIGINT
+  ADR-001: Local rule engine is fallback only. Lambda authoritative.
+  ADR-002: No write path to OT. MQTT read only.
+
+Track 2 - ops.html Edge Status
+  Files: lambda/ops_control/handler.py
+         src/main/resources/static/ops.html
+  Features:
+    ops.html shows Edge Agent: ONLINE/OFFLINE/UNKNOWN
+    EDGE_OFFLINE amber banner when heartbeat is stale
+    ops Lambda checks DynamoDB for last heartbeat timestamp
+
+Track 3 - Edge Setup Documentation
+  Files: edge/README.md
+         docs/EDGE_LAYER_SETUP.md
+  Features:
+    Hardware requirements and network config
+    Step-by-step software installation
+    systemd service for auto-start on boot
+    IEC 62443 compliance verification checklist
+    Mosquitto MQTT test procedure
+
+Track 4 - ADR-005 marked IMPLEMENTED
+
+ADR Compliance - all 5 ADRs upheld:
+  ADR-001: Lambda authoritative. Local rule engine = fallback replica.
+  ADR-002: Edge agent has zero write path to PLC/DCS.
+           MQTT read-only. Firewall enforced at NIC level.
+  ADR-003: No LLM on edge. AiAdvisoryWrapper cloud-only.
+  ADR-004: Ring buffer is temporary local. All history remains S3+Athena.
+  ADR-005: IMPLEMENTED - edge layer architecture delivered.
+
+Build: mvn -q -DskipTests package - PASS
+Python: edge agent syntax verified
+No force push used
+AWS cost impact: +$0.01/month (SNS heartbeat messages only)
