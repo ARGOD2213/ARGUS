@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARGUS Control</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9;
+     min-height:100vh;display:flex;flex-direction:column;
+     align-items:center;padding:32px 16px}
+h1{font-size:22px;font-weight:700;color:#38bdf8;margin-bottom:4px}
+.sub{font-size:13px;color:#64748b;margin-bottom:28px}
+.card{background:#1e293b;border-radius:16px;padding:20px;
+      width:100%;max-width:360px;margin-bottom:16px}
+.row{display:flex;justify-content:space-between;align-items:center;
+     margin-bottom:10px}
+.row:last-child{margin-bottom:0}
+.lbl{font-size:13px;color:#94a3b8}
+.badge{font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px}
+.run{background:#14532d;color:#4ade80}
+.stop{background:#450a0a;color:#f87171}
+.pend{background:#312e81;color:#a5b4fc}
+.unk{background:#1e293b;color:#64748b;border:1px solid #334155}
+.btn{width:100%;max-width:360px;padding:17px;border:none;
+     border-radius:14px;font-size:16px;font-weight:700;
+     cursor:pointer;margin-bottom:10px;transition:opacity .15s}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.b-start{background:#2563eb;color:#fff}
+.b-stop{background:#dc2626;color:#fff}
+.b-open{background:transparent;color:#38bdf8;
+        border:2px solid #2563eb;text-decoration:none;
+        text-align:center;display:none;padding-top:18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;
+      width:100%;max-width:360px;margin-top:4px;display:none}
+.dl{background:#1e293b;border-radius:10px;padding:13px;
+    text-align:center;text-decoration:none;
+    color:#94a3b8;font-size:13px;font-weight:500}
+.dl:hover{color:#f1f5f9;background:#334155}
+.msg{font-size:13px;color:#64748b;text-align:center;
+     margin-bottom:14px;min-height:18px}
+.note{font-size:11px;color:#475569;text-align:center;margin-top:10px}
+input[type=password]{width:100%;max-width:360px;background:#1e293b;
+  border:1px solid #334155;border-radius:10px;color:#f1f5f9;
+  font-size:15px;padding:14px;margin-bottom:12px;outline:none}
+input[type=password]:focus{border-color:#2563eb}
+.pw-label{font-size:13px;color:#94a3b8;
+          width:100%;max-width:360px;margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<h1>⚡ ARGUS</h1>
+<p class="sub">Industrial IoT Control Plane</p>
+
+<div class="card" id="status-card">
+  <div class="row">
+    <span class="lbl">EC2 Status</span>
+    <span class="badge unk" id="st-badge">Checking…</span>
+  </div>
+  <div class="row">
+    <span class="lbl">App Health</span>
+    <span class="badge unk" id="hl-badge">—</span>
+  </div>
+  <div class="row">
+    <span class="lbl">Uptime</span>
+    <span class="lbl"  id="up-label">—</span>
+  </div>
+</div>
+
+<p class="pw-label">Control password</p>
+<input type="password" id="pw" placeholder="Enter ops password">
+
+<p class="msg" id="msg"></p>
+
+<button class="btn b-start" id="b-start" onclick="doStart()">▶ Start ARGUS</button>
+<button class="btn b-stop"  id="b-stop"  onclick="doStop()" disabled>■ Stop ARGUS</button>
+<a     class="btn b-open"  id="b-open"  href="#">↗ Open Dashboard</a>
+
+<div class="grid" id="dash-grid">
+  <a class="dl" id="l-machine"    href="#">Machine</a>
+  <a class="dl" id="l-safety"     href="#">Safety</a>
+  <a class="dl" id="l-plant"      href="#">Plant</a>
+  <a class="dl" id="l-compliance" href="#">Compliance</a>
+  <a class="dl" id="l-handover"   href="#">Handover</a>
+  <a class="dl" id="l-timeline"   href="#">Timeline</a>
+</div>
+
+<p class="note" id="autostop-note"></p>
+
+<script>
+// -- CONFIGURE after running deploy-ops-control.sh ----------------
+const API = 'https://REPLACE_WITH_API_GATEWAY_URL';
+// -- END CONFIG ----------------------------------------------------
+
+let appUrl = null;
+let pollerId = null;
+
+const pw = () => document.getElementById('pw').value.trim();
+const msg = t => document.getElementById('msg').textContent = t;
+
+function apiHeaders(includeAuth) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (includeAuth) headers['x-ops-password'] = pw();
+  return headers;
+}
+
+async function fetchStatus() {
+  try {
+    const response = await fetch(`${API}/ops/status`,
+      { headers: apiHeaders(false) });
+    return response.ok ? await response.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function checkHealth(url) {
+  try {
+    const response = await fetch(`${url}/api/v1/health`,
+      { signal: AbortSignal.timeout(4000) });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+function ui(status, healthy) {
+  const sb = document.getElementById('st-badge');
+  const hb = document.getElementById('hl-badge');
+  const bs = document.getElementById('b-start');
+  const bx = document.getElementById('b-stop');
+  const bo = document.getElementById('b-open');
+  const dg = document.getElementById('dash-grid');
+  const ul = document.getElementById('up-label');
+  const an = document.getElementById('autostop-note');
+
+  if (!status) {
+    sb.className = 'badge unk';
+    sb.textContent = 'Unknown';
+    return;
+  }
+
+  const s = status.state;
+  sb.className = `badge ${s==='running'?'run':s==='stopped'?'stop':'pend'}`;
+  sb.textContent = s[0].toUpperCase() + s.slice(1);
+  ul.textContent = status.uptimeMinutes > 0 ? `${status.uptimeMinutes} min` : '—';
+
+  if (status.uptimeMinutes > 0) {
+    an.textContent = `Auto-stop in ~${Math.max(0, 240-status.uptimeMinutes)} min`;
+  } else {
+    an.textContent = '';
+  }
+
+  bs.disabled = s !== 'stopped';
+  bx.disabled = s !== 'running';
+
+  if (s === 'running' && healthy && status.appUrl) {
+    appUrl = status.appUrl;
+    hb.className = 'badge run';
+    hb.textContent = 'Healthy';
+    bo.href = appUrl + '/index.html';
+    bo.style.display = 'block';
+    dg.style.display = 'grid';
+    const b = appUrl;
+    document.getElementById('l-machine').href = b + '/machine.html';
+    document.getElementById('l-safety').href = b + '/safety.html';
+    document.getElementById('l-plant').href = b + '/plant.html';
+    document.getElementById('l-compliance').href = b + '/compliance.html';
+    document.getElementById('l-handover').href = b + '/handover.html';
+    document.getElementById('l-timeline').href = b + '/timeline.html';
+  } else if (s === 'running') {
+    hb.className = 'badge pend';
+    hb.textContent = 'Warming up…';
+    bo.style.display = 'none';
+    dg.style.display = 'none';
+  } else {
+    hb.className = 'badge stop';
+    hb.textContent = '—';
+    bo.style.display = 'none';
+    dg.style.display = 'none';
+  }
+}
+
+async function poll() {
+  const status = await fetchStatus();
+  const healthy = status?.appUrl ? await checkHealth(status.appUrl) : false;
+  ui(status, healthy);
+  if (status?.state === 'running' && !healthy) {
+    msg('Warming up — checking every 15 s…');
+  } else if (status?.state === 'running' && healthy) {
+    msg('Platform is live. Tap Open Dashboard.');
+    clearInterval(pollerId);
+    pollerId = setInterval(poll, 30000);
+  } else {
+    msg('');
+  }
+}
+
+async function doStart() {
+  if (!pw()) {
+    msg('Enter the ops password first.');
+    return;
+  }
+  document.getElementById('b-start').disabled = true;
+  msg('Sending start signal…');
+  const response = await fetch(`${API}/ops/start`,
+    { method: 'POST', headers: apiHeaders(true) });
+  if (response.status === 401) {
+    msg('Wrong password.');
+    document.getElementById('b-start').disabled = false;
+    return;
+  }
+  msg('Starting… polling every 15 s until healthy.');
+  clearInterval(pollerId);
+  pollerId = setInterval(poll, 15000);
+  poll();
+}
+
+async function doStop() {
+  if (!pw()) {
+    msg('Enter the ops password first.');
+    return;
+  }
+  document.getElementById('b-stop').disabled = true;
+  msg('Stopping…');
+  const response = await fetch(`${API}/ops/stop`,
+    { method: 'POST', headers: apiHeaders(true) });
+  if (response.status === 401) {
+    msg('Wrong password.');
+    document.getElementById('b-stop').disabled = false;
+    return;
+  }
+  setTimeout(poll, 3000);
+}
+
+poll();
+pollerId = setInterval(poll, 30000);
+</script>
+</body>
+</html>
