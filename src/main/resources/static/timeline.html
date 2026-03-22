@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARGUS — Situation Timeline</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9;min-height:100vh}
+  header{position:sticky;top:0;z-index:100;background:#1e293b;padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
+  .logo{color:#fff;font-weight:700;font-size:18px}
+  nav a{color:#94a3b8;text-decoration:none;font-size:14px;margin-left:16px}
+  nav a.active{color:#fff}
+  .container{max-width:800px;margin:0 auto;padding:24px 16px}
+  .controls{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;align-items:center}
+  .machine-select{padding:9px 14px;background:#1e293b;border:1px solid #334155;color:#f1f5f9;border-radius:8px;font-size:14px;font-family:inherit;cursor:pointer}
+  .hours-btn{padding:8px 16px;border:2px solid #334155;border-radius:8px;background:#1e293b;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+  .hours-btn.active,.hours-btn:hover{border-color:#2563eb;background:#2563eb;color:#fff}
+  .btn-print{background:#1e293b;color:#94a3b8;border:1px solid #334155;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;margin-left:auto}
+  .btn-print:hover{color:#f1f5f9}
+  .summary-row{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+  .sum-chip{background:#1e293b;border-radius:8px;padding:8px 14px;font-size:12px;color:#94a3b8}
+  .sum-chip strong{color:#f1f5f9}
+  .timeline{position:relative;padding-left:32px}
+  .timeline::before{content:'';position:absolute;left:11px;top:0;bottom:0;width:2px;background:#334155}
+  .t-event{position:relative;margin-bottom:20px}
+  .t-dot{position:absolute;left:-26px;top:4px;width:14px;height:14px;border-radius:50%;border:2px solid #0f172a;flex-shrink:0}
+  .t-dot.red{background:#dc2626}
+  .t-dot.amber{background:#d97706}
+  .t-dot.green{background:#16a34a}
+  .t-dot.blue{background:#2563eb}
+  .t-dot.purple{background:#7c3aed}
+  .t-card{background:#1e293b;border-radius:10px;padding:12px 14px;border-left:3px solid #334155}
+  .t-card.red{border-left-color:#dc2626}
+  .t-card.amber{border-left-color:#d97706}
+  .t-card.green{border-left-color:#16a34a}
+  .t-card.blue{border-left-color:#2563eb}
+  .t-card.purple{border-left-color:#7c3aed}
+  .t-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .t-time{font-size:12px;font-weight:700;color:#94a3b8;min-width:40px}
+  .t-type-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;text-transform:uppercase}
+  .t-type-badge.SENSOR_CRITICAL{background:#450a0a;color:#f87171}
+  .t-type-badge.SENSOR_WARNING{background:#431407;color:#fbbf24}
+  .t-type-badge.SENSOR_NORMAL{background:#14532d;color:#4ade80}
+  .t-type-badge.ALERT_ACKNOWLEDGED{background:#1e3a5f;color:#93c5fd}
+  .t-type-badge.AI_ADVISORY{background:#3b0764;color:#c4b5fd}
+  .t-detail{font-size:13px;color:#e2e8f0;line-height:1.4}
+  .empty-state{text-align:center;padding:48px 24px;color:#475569}
+  .empty-icon{font-size:40px;margin-bottom:12px}
+  footer{text-align:center;padding:24px;color:#475569;font-size:12px}
+  @media print{body{background:#fff;color:#1e293b}header,.controls,.btn-print{display:none!important}.timeline::before{background:#cbd5e1}.t-card{background:#f8fafc;border:1px solid #e2e8f0}.t-time,.t-detail{color:#374151}.t-dot{border-color:#fff}footer{display:block;color:#64748b}}
+  @media(max-width:600px){nav{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">⚡ ARGUS</span>
+  <nav>
+    <a href="/index.html">Overview</a>
+    <a href="/machine.html">Machine</a>
+    <a href="/safety.html">Safety</a>
+    <a href="/plant.html">Plant</a>
+    <a href="/compliance.html">Compliance</a>
+    <a href="/handover.html">Handover</a>
+    <a href="/timeline.html" class="active">Timeline</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="controls">
+    <select class="machine-select" id="machine-select" onchange="loadTimeline()">
+      <option value="COMP-01">COMP-01</option>
+      <option value="PUMP-01">PUMP-01</option>
+      <option value="MOTOR-01">MOTOR-01</option>
+      <option value="COMP-02">COMP-02</option>
+      <option value="PUMP-02">PUMP-02</option>
+    </select>
+    <button class="hours-btn active" onclick="setHours(8,this)">8 hr</button>
+    <button class="hours-btn" onclick="setHours(24,this)">24 hr</button>
+    <button class="hours-btn" onclick="setHours(48,this)">48 hr</button>
+    <button class="btn-print" onclick="window.print()">🖨 Print</button>
+  </div>
+
+  <div class="summary-row" id="summary-row"></div>
+
+  <div id="timeline-container">
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div>Loading timeline...</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  ARGUS — Event-Driven Industrial IoT Monitoring Platform |
+  AI outputs are advisory only — not control instructions |
+  Rule engine has final authority on all CRITICAL alerts
+</footer>
+
+<script>
+  let currentHours = 8;
+  (function() {
+    const params = new URLSearchParams(window.location.search);
+    const mid = params.get('machineId');
+    if (mid) {
+      const sel = document.getElementById('machine-select');
+      if (![...sel.options].some(o => o.value === mid)) {
+        const opt = document.createElement('option');
+        opt.value = mid; opt.textContent = mid;
+        sel.appendChild(opt);
+      }
+      sel.value = mid;
+    }
+  })();
+
+  function setHours(h, btn) {
+    currentHours = h;
+    document.querySelectorAll('.hours-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    loadTimeline();
+  }
+
+  function typeLabelMap(type) {
+    return {
+      SENSOR_CRITICAL: 'Critical Alert',
+      SENSOR_WARNING: 'Warning Alert',
+      SENSOR_NORMAL: 'Returned Normal',
+      ALERT_ACKNOWLEDGED: 'Acknowledged',
+      AI_ADVISORY: 'AI Advisory'
+    }[type] || type;
+  }
+
+  function summaryCounts(events) {
+    const counts = { SENSOR_CRITICAL: 0, SENSOR_WARNING: 0, ALERT_ACKNOWLEDGED: 0, AI_ADVISORY: 0 };
+    events.forEach(e => { if (counts[e.type] !== undefined) counts[e.type]++; });
+    return counts;
+  }
+
+  async function loadTimeline() {
+    const machineId = document.getElementById('machine-select').value;
+    const container = document.getElementById('timeline-container');
+    const summRow = document.getElementById('summary-row');
+
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><div>Loading...</div></div>';
+    summRow.innerHTML = '';
+
+    try {
+      const r = await fetch(`/api/v1/timeline?machineId=${encodeURIComponent(machineId)}&hours=${currentHours}`);
+      const d = await r.json();
+      const events = d.events || [];
+
+      const counts = summaryCounts(events);
+      summRow.innerHTML = `
+        <div class="sum-chip">Machine: <strong>${machineId}</strong></div>
+        <div class="sum-chip">Period: <strong>Last ${currentHours}h</strong></div>
+        <div class="sum-chip">Events: <strong>${events.length}</strong></div>
+        ${counts.SENSOR_CRITICAL > 0 ? `<div class="sum-chip">CRITICAL: <strong style="color:#f87171">${counts.SENSOR_CRITICAL}</strong></div>` : ''}
+        ${counts.ALERT_ACKNOWLEDGED > 0 ? `<div class="sum-chip">Acknowledged: <strong style="color:#4ade80">${counts.ALERT_ACKNOWLEDGED}</strong></div>` : ''}
+      `;
+
+      if (events.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><div style="color:#4ade80;margin-bottom:4px;">No abnormal events in this period</div><div style="font-size:12px;color:#475569">All sensors operating within normal range</div></div>';
+        return;
+      }
+
+      container.innerHTML = '<div class="timeline" id="timeline-inner"></div>';
+      const inner = document.getElementById('timeline-inner');
+      inner.innerHTML = events.map(e => `
+        <div class="t-event">
+          <div class="t-dot ${e.color}"></div>
+          <div class="t-card ${e.color}">
+            <div class="t-header">
+              <span class="t-time">${e.displayTime}</span>
+              <span class="t-type-badge ${e.type}">${typeLabelMap(e.type)}</span>
+            </div>
+            <div class="t-detail">${e.detail}</div>
+          </div>
+        </div>
+      `).join('');
+
+    } catch(err) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠</div><div>Could not load timeline — check platform status.</div></div>';
+    }
+  }
+
+  loadTimeline();
+</script>
+</body>
+</html>

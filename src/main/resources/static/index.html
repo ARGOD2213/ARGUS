@@ -249,6 +249,7 @@
       <a href="/plant.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Plant</a>
       <a href="/compliance.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Compliance</a>
       <a href="/handover.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Handover</a>
+      <a href="/timeline.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Timeline</a>
     </nav>
   </header>
 
@@ -405,7 +406,8 @@
         { href: "/safety.html", title: "Human Safety", summary: "WBGT " + data.wbgt.toFixed(1) + " | Max NH3 " + data.maxNh3.toFixed(1) + " ppm" },
         { href: "/plant.html", title: "Plant-Wide", summary: "Plant OEE " + data.plantOee.toFixed(1) + "% | Zones with alerts: " + data.zonesWithAlerts },
         { href: "/compliance.html", title: "Compliance", summary: "OCS " + data.compliance.toFixed(1) + "% | Demo period " + data.compliancePeriod },
-        { href: "/handover.html", title: "Handover Log", summary: "Shift summary, operator notes, and AI advisory for incoming team" }
+        { href: "/handover.html", title: "Handover Log", summary: "Shift summary, operator notes, and AI advisory for incoming team" },
+        { href: "/timeline.html", title: "Situation Timeline", summary: "Chronological abnormal event history and acknowledgement trail" }
       ];
 
       document.getElementById("navCards").innerHTML = cards.map(card => `

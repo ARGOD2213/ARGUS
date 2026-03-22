@@ -1,0 +1,79 @@
+Sprint 4 Closure — ARGUS Industrial IoT Platform
+═══════════════════════════════════════════════════
+Closure date: 2026-03-22
+All 5 tracks complete.
+
+Track 1 — Phone Control Plane
+  Files: lambda/ops_control/handler.py,
+         src/main/resources/static/ops.html,
+         scripts/deploy-ops-control.sh,
+         src/main/java/.../SecurityConfig.java
+  Features: SSM-backed Lambda start/stop, HTTP Basic Auth,
+            stable Elastic IP, S3 ops.html with token injection
+  Commit: d6429f1..9f3de02
+
+Track 2 — Alert Acknowledgement + Escalation
+  Files: AlertAcknowledgementService.java,
+         AlertWorkflowController.java,
+         machine.html, index.html
+  Endpoints: POST/GET /api/v1/alerts/{id}/acknowledge,
+             GET /api/v1/alerts/unacknowledged,
+             POST /api/v1/alerts/{id}/escalate
+  Features: ACK button per CRITICAL alert, 3-min amber timer,
+            5-min SNS escalation, unacknowledged counter on overview
+  Commit: a659d4e
+
+Track 3 — Shift Handover Logbook
+  Files: ShiftHandoverService.java,
+         ShiftHandoverController.java,
+         handover.html
+  Endpoints: GET /api/v1/handover/summary,
+             POST /api/v1/handover/note,
+             GET /api/v1/handover/notes
+  Features: 8/12/24hr shift selector, AI advisory with confidence,
+            operator notes to S3, print-friendly layout
+  Commit: f4f0b33
+
+Track 4 — Combined Zone Risk Score
+  Files: ZoneRiskScoringService.java,
+         ZoneRiskController.java,
+         plant.html, safety.html
+  Endpoints: GET /api/v1/zones/risk,
+             GET /api/v1/zones/risk/{zone}
+  Features: WBGT + NH3 + machine alert composite score,
+            zone cards on plant.html, badges on safety.html
+  Commit: 4a996a5
+
+Track 5 — Abnormal Situation Timeline
+  Files: TimelineService.java,
+         TimelineController.java,
+         timeline.html,
+         machine.html (View Timeline) + all dashboards nav
+  Endpoint: GET /api/v1/timeline?machineId=&hours=
+  Features: Chronological event log, 5 event types,
+            color coded dots, print-friendly, URL machine select
+  Commit: 4a996a5 (plus this closure commit)
+
+ADR Compliance — all 4 ADRs upheld across all 5 tracks:
+  ADR-001: Rule engine Lambda only — no threshold logic in Spring Boot
+  ADR-002: Zero write path to OT layer — confirmed
+  ADR-003: AiAdvisoryWrapper on LLM outputs — confirmed
+  ADR-004: DynamoDB for alerts/metadata, S3 for documents — confirmed
+
+New endpoints this sprint:
+  POST /api/v1/alerts/{id}/acknowledge
+  GET  /api/v1/alerts/unacknowledged
+  POST /api/v1/alerts/{id}/escalate
+  GET  /api/v1/alerts/{id}/ack-status
+  GET  /api/v1/handover/summary
+  POST /api/v1/handover/note
+  GET  /api/v1/handover/notes
+  GET  /api/v1/zones/risk
+  GET  /api/v1/zones/risk/{zone}
+  GET  /api/v1/timeline
+
+New dashboards added: handover.html, timeline.html
+Total dashboard pages: index, machine, safety, plant, compliance, handover, timeline (7 total)
+
+AWS cost impact: +$0.08/month total across all 5 tracks
+Build: mvn -q -DskipTests package — PASS all tracks
