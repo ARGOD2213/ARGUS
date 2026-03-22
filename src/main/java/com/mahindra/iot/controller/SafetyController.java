@@ -1,5 +1,6 @@
 package com.mahindra.iot.controller;
 
+import com.mahindra.iot.service.FatigueAssessmentService;
 import com.mahindra.iot.service.WeatherService;
 import com.mahindra.iot.service.WorkerExposureService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -7,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,7 +24,9 @@ import java.util.Map;
 public class SafetyController {
 
     private static final String EVACUATION_ZONE = "Muster Point B (leeward side)";
+    private static final String ADVISORY_LABEL = "AI ADVISORY | Not a control action | Rule engine has final authority";
 
+    private final FatigueAssessmentService fatigueAssessmentService;
     private final WeatherService weatherService;
     private final WorkerExposureService workerExposureService;
 
@@ -93,6 +97,32 @@ public class SafetyController {
                 Map.of("zone", "UTILITY", "type", "Electrical", "status", "SUSPENDED", "expires", "20:00", "issuedTo", "Kiran R.")
         );
         return ResponseEntity.ok(ptw);
+    }
+
+    @GetMapping("/fatigue-score")
+    @Operation(summary = "FAID-lite fatigue score")
+    public ResponseEntity<Map<String, Object>> getFatigueScore(@RequestParam double shiftHours,
+                                                               @RequestParam int consecutiveDays,
+                                                               @RequestParam int currentHour,
+                                                               @RequestParam double hoursSinceLastSleep) {
+        FatigueAssessmentService.FatigueResult result = fatigueAssessmentService.assess(
+                shiftHours,
+                consecutiveDays,
+                currentHour,
+                hoursSinceLastSleep
+        );
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("score", result.score());
+        payload.put("status", result.status());
+        payload.put("threshold_normal", 50);
+        payload.put("threshold_restricted", 70);
+        payload.put("threshold_mandatory_rest", 85);
+        payload.put("model", "FAID-lite");
+        payload.put("supervisorActionRequired", result.score() > 50);
+        payload.put("label", ADVISORY_LABEL);
+        payload.put("note", "AI ADVISORY | Not a control action | Supervisor must confirm all duty restrictions");
+        return ResponseEntity.ok(payload);
     }
 
     private Map<String, Object> worker(String workerId,
