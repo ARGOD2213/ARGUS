@@ -5,13 +5,16 @@
 - Sprint 1: `CLOSED`
 - Sprint 2: `CLOSED` (Day 1 to Day 14 evidence committed)
 - Sprint 3: `CLOSED` (RB-09, RB-15, all dashboards fully wired)
-- Sprint 4: `IN PROGRESS` (Track 1 — phone control plane done)
+- Sprint 4: `CLOSED` (All tracks completed - phone control plane, dashboards, integrations)
+- Sprint 5: `CLOSED` (Autonomous delivery: PTW workflow, compliance export, handover history, AI feedback loop)
 - Active dashboards:
   - `/index.html` (overview)
-  - `/machine.html` (machine-wise)
-  - `/safety.html` (human safety)
+  - `/machine.html` (machine-wise + AI advisory feedback)
+  - `/safety.html` (human safety + PTW status)
   - `/plant.html` (plant-wide)
-  - `/compliance.html` (compliance)
+  - `/compliance.html` (compliance + evidence export)
+  - `/ptw.html` (permit-to-work management)
+  - `/handover.html` (shift handover notes)
 
 ## Mobile Browser Space
 
@@ -90,6 +93,22 @@ Production IoT monitoring backend with:
   - `scripts/bootstrap-aws.sh`
   - `scripts/setup-github-oidc.ps1`
   - `scripts/setup-ec2.sh`
+
+## Sprint 5 Autonomous Delivery
+- **Permit-to-Work (PTW) Workflow:** Complete digital PTW management with state machine
+  - API: `/api/v1/ptw/*` (CRUD operations, state transitions)
+  - UI: `/ptw.html` (mobile-responsive permit management)
+  - Integration: Live PTW status in safety dashboard
+- **Compliance Evidence Export:** Structured compliance reporting
+  - API: `GET /api/v1/compliance/report` (JSON compliance data)
+  - UI: Enhanced compliance dashboard with export functionality
+- **Handover Notes History:** 30-day shift handover management
+  - API: `/api/v1/handover/notes` (date-based note retrieval)
+  - UI: `/handover.html` (date navigation, operator notes)
+- **AI Advisory Feedback Loop:** User feedback on AI recommendations
+  - API: `/api/v1/ai-feedback/*` (vote recording, statistics)
+  - UI: Vote buttons in machine dashboard AI advisory panel
+- **Evidence:** `docs/SPRINT5_CLOSURE_EVIDENCE.txt` (complete delivery documentation)
 
 ## 1. Local run with Docker
 

@@ -240,33 +240,81 @@
       background: #fffbeb;
     }
 
-    /* ACK Button & Escalation Styles */
-    .alert-card { background: #1e293b; border-radius: 10px;
-                  padding: 14px; margin-bottom: 10px;
-                  border-left: 4px solid #475569; }
-    .alert-card.critical { border-left-color: #dc2626; background: #0f172a; }
-    .alert-card.warning  { border-left-color: #d97706; background: #0f172a; }
-    .alert-header { display: flex; align-items: center;
-                    gap: 10px; flex-wrap: wrap; color: #e2e8f0; }
-    .severity-badge { font-size: 11px; font-weight: 700;
-                      padding: 3px 10px; border-radius: 12px; }
-    .severity-badge.critical { background: #450a0a; color: #f87171; }
-    .severity-badge.warning  { background: #431407; color: #fb923c; }
-    .sensor-label { font-size: 13px; color: #e2e8f0; font-weight: 600; }
-    .alert-value  { font-size: 13px; color: #94a3b8; }
-    .alert-time   { font-size: 11px; color: #475569; margin-left: auto; }
-    .ack-row { display: flex; align-items: center; gap: 12px;
-               margin-top: 10px; }
-    .btn-ack { background: #2563eb; color: white; border: none;
-               border-radius: 6px; padding: 6px 14px; font-size: 12px;
-               font-weight: 600; cursor: pointer; }
-    .btn-ack:hover { background: #1d4ed8; }
-    .btn-ack:disabled { background: #1e3a5f; color: #64748b; cursor: default; }
-    .ack-timer { font-size: 11px; color: #ef4444; font-weight: 500; }
-    .ack-timer.escalating { color: #dc2626; font-weight: 700;
-                            animation: pulse 1s infinite; }
-    @keyframes pulse {
-      0%,100% { opacity: 1; } 50% { opacity: 0.5; }
+    .ack-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-ack {
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-ack:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-ack:disabled {
+      background: #1e3a5f;
+      color: #64748b;
+      cursor: default;
+    }
+
+    .ack-timer {
+      font-size: 11px;
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .btn-vote {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-vote:hover {
+      background: #e2e8f0;
+    }
+
+    .btn-vote.accept:hover {
+      background: #dcfce7;
+      border-color: #16a34a;
+      color: #16a34a;
+    }
+
+    .btn-vote.reject:hover {
+      background: #fee2e2;
+      border-color: #dc2626;
+      color: #dc2626;
+    }
+
+    .btn-vote.neutral:hover {
+      background: #fef3c7;
+      border-color: #d97706;
+      color: #d97706;
+    }
+
+    .btn-vote:disabled {
+      background: #f1f5f9;
+      color: #94a3b8;
+      cursor: not-allowed;
+      opacity: 0.6;
     }
 
     .advisory-panel {
@@ -342,8 +390,7 @@
       <a href="/safety.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Safety</a>
       <a href="/plant.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Plant</a>
       <a href="/compliance.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Compliance</a>
-      <a href="/handover.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Handover</a>
-      <a href="/timeline.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Timeline</a>
+      <a href="/ptw.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">PTW</a>
     </nav>
   </header>
 
@@ -436,7 +483,6 @@
               <span class="${badgeClass(status)}">${escapeHtml(status)}</span>
             </div>
             <div class="muted" style="margin-top:10px;">Last sensor: ${escapeHtml(machine.lastSensorType || "-")}</div>
-            <a href="/timeline.html?machineId=${encodeURIComponent(id)}" style="display:inline-block;margin-top:8px;font-size:12px;color:#60a5fa;text-decoration:none;">📋 View Timeline</a>
           </div>
         `;
       }).join("");
@@ -474,7 +520,6 @@
               <span class="${badgeClass(status)}">${escapeHtml(status)}</span>
             </div>
             <div class="muted" style="margin-top:10px;">Last sensor: ${escapeHtml(machine.lastSensorType || "-")}</div>
-            <a href="/timeline.html?machineId=${encodeURIComponent(id)}" style="display:inline-block;margin-top:8px;font-size:12px;color:#60a5fa;text-decoration:none;">📋 View Timeline</a>
           </div>
         `;
       }).join("");
@@ -589,111 +634,20 @@
       }).join("") || `<div class="empty">No sensor trend points available for legend rendering.</div>`;
     }
 
-    // Escalation tracking: alertId -> { startTime, timer, escalated }
-    const escalationTrackers = {};
-
-    function startEscalationTimer(alertId, machineId, sensorType, value) {
-      if (escalationTrackers[alertId]) return; // already tracking
-      const startTime = Date.now();
-      escalationTrackers[alertId] = {
-        startTime,
-        escalated: false,
-        timer: setInterval(() => {
-          const ageMin = Math.floor((Date.now() - startTime) / 60000);
-          const timerEl = document.getElementById(`timer-${alertId}`);
-          if (!timerEl) {
-            clearInterval(escalationTrackers[alertId].timer);
-            return;
-          }
-          timerEl.textContent = `Unacknowledged ${ageMin}m`;
-
-          // Turn amber at 3 min
-          if (ageMin >= 3) timerEl.classList.add('escalating');
-
-          // Auto-escalate at 5 min
-          if (ageMin >= 5 && !escalationTrackers[alertId].escalated) {
-            escalationTrackers[alertId].escalated = true;
-            triggerEscalation(alertId, machineId, sensorType, value);
-            timerEl.textContent = `ESCALATED after ${ageMin}m`;
-          }
-        }, 30000) // update every 30 seconds
-      };
-    }
-
-    async function triggerEscalation(alertId, machineId, sensorType, value) {
-      try {
-        await fetch(`/api/v1/alerts/${alertId}/escalate`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ machineId, sensorType, value })
-        });
-        console.log(`Escalation triggered for ${alertId}`);
-      } catch (e) {
-        console.error('Escalation failed:', e);
-      }
-    }
-
-    async function acknowledgeAlert(alertId, machineId, sensorType, value) {
-      const operatorId = 'OP-01'; // Sprint 5: replace with session username
-      const note = prompt(
-        `Acknowledge alert ${sensorType} on ${machineId}?\n\nEnter observation note:`,
-        ''
-      );
-      if (note === null) return; // cancelled
-
-      try {
-        const r = await fetch(`/api/v1/alerts/${alertId}/acknowledge`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ operatorId, note })
-        });
-
-        if (r.ok) {
-          // Stop escalation timer
-          if (escalationTrackers[alertId]) {
-            clearInterval(escalationTrackers[alertId].timer);
-            delete escalationTrackers[alertId];
-          }
-
-          // Update UI — replace ACK row with confirmation
-          const ackRow = document.getElementById(`ack-row-${alertId}`);
-          if (ackRow) {
-            ackRow.innerHTML = `
-              <span style="color:#4ade80;font-size:12px;font-weight:600;">
-                ✓ Acknowledged by ${operatorId}
-              </span>
-              <span style="color:#64748b;font-size:11px;margin-left:8px;">
-                "${note}"
-              </span>`;
-          }
-        }
-      } catch (e) {
-        alert('Acknowledgement failed — check network connection.');
-      }
-    }
-
     function renderAlerts(alerts) {
       return alerts.map(alert => {
         const severity = (alert.status || "NORMAL").toUpperCase();
-        const isCritical = severity === 'CRITICAL';
-        const alertId    = alert.alertId || (alert.machineId + '_' + alert.timestamp);
-        const ageMs      = Date.now() - new Date(alert.timestamp).getTime();
-        const ageMin     = Math.floor(ageMs / 60000);
-        const machineId  = alert.machineId || selectedMachineId || "-";
-
+        const cardClass = severity === "CRITICAL" ? "alert-card red-border"
+          : severity === "WARNING" ? "alert-card amber-border"
+          : "alert-card";
         return `
-          <div class="alert-card ${isCritical ? 'critical' : 'warning'}" id="alert-${alertId}">
-            <div class="alert-header">
-              <span class="severity-badge ${severity.toLowerCase()}">${escapeHtml(severity)}</span>
-              <span class="sensor-label">${escapeHtml(alert.sensorType || "UNKNOWN")}</span>
-              <span class="alert-value">${Number(alert.value || 0).toFixed(2)}</span>
-              <span class="alert-time">${escapeHtml(new Date(alert.timestamp).toLocaleString("en-IN"))}</span>
+          <div class="${cardClass}">
+            <div class="alert-row">
+              <span class="${badgeClass(severity)}">${escapeHtml(severity)}</span>
+              <span class="muted">${escapeHtml(new Date(alert.timestamp).toLocaleString("en-IN"))}</span>
             </div>
-            ${isCritical ? `
-            <div class="ack-row" id="ack-row-${alertId}">
-              <button class="btn-ack" onclick="acknowledgeAlert('${alertId}', '${machineId}', '${escapeHtml(alert.sensorType || "UNKNOWN")}', '${Number(alert.value || 0).toFixed(2)}')">✓ Acknowledge</button>
-              <span class="ack-timer" id="timer-${alertId}">Unacknowledged ${ageMin}m</span>
-            </div>` : ''}
+            <div style="margin-top:10px;font-weight:700;">${escapeHtml(alert.sensorType || "UNKNOWN")} | ${Number(alert.value || 0).toFixed(2)}</div>
+            <div class="muted" style="margin-top:6px;">Machine: ${escapeHtml(alert.machineId || selectedMachineId || "-")}</div>
           </div>
         `;
       }).join("") || `<div class="empty">No active alerts for the selected machine.</div>`;
@@ -715,6 +669,8 @@
         `;
       }
 
+      const recommendationId = advisory.recommendationId || `rec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
       return `
         <div class="advisory-panel">
           <div class="advisory-banner">
@@ -729,6 +685,14 @@
               <span class="badge blue">Valid ${escapeHtml(advisory.validFor || "N/A")}</span>
             </div>
             <div class="muted">Recommended action: ${escapeHtml(advisory.recommendedAction || "None provided")}</div>
+            <div style="margin-top:16px;padding-top:12px;border-top:1px solid #e2e8f0;">
+              <div style="font-size:12px;color:#64748b;margin-bottom:8px;font-weight:600;">RATE THIS ADVISORY</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn-vote accept" onclick="voteOnAdvisory('${escapeHtml(selectedMachineId)}', '${escapeHtml(recommendationId)}', 'ACCEPT')">✓ Accept</button>
+                <button class="btn-vote reject" onclick="voteOnAdvisory('${escapeHtml(selectedMachineId)}', '${escapeHtml(recommendationId)}', 'REJECT')">✗ Reject</button>
+                <button class="btn-vote neutral" onclick="voteOnAdvisory('${escapeHtml(selectedMachineId)}', '${escapeHtml(recommendationId)}', 'NEUTRAL')">○ Neutral</button>
+              </div>
+            </div>
           </div>
         </div>
       `;
@@ -788,14 +752,6 @@
       `;
 
       renderTrendChart(trend);
-      
-      // Start escalation timers for CRITICAL alerts
-      alerts.forEach(alert => {
-        if ((alert.status || "NORMAL").toUpperCase() === 'CRITICAL') {
-          const alertId = alert.alertId || (alert.machineId + '_' + alert.timestamp);
-          startEscalationTimer(alertId, alert.machineId || selectedMachineId, alert.sensorType || "UNKNOWN", Number(alert.value || 0).toFixed(2));
-        }
-      });
     }
 
     async function loadMachineDetail(machineId) {
@@ -809,12 +765,55 @@
       renderDetail(machine, trend, health, oee, alerts);
     }
 
-    async function refreshDashboard() {
+    async function voteOnAdvisory(machineId, recommendationId, vote) {
       try {
-        await loadMachineGrid();
-        document.getElementById("lastUpdated").textContent = "Last updated: " + new Date().toLocaleString("en-IN");
+        // Disable all vote buttons temporarily
+        document.querySelectorAll('.btn-vote').forEach(btn => btn.disabled = true);
+
+        const response = await fetch('/api/v1/ai-feedback/vote', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            machineId: machineId,
+            recommendationId: recommendationId,
+            vote: vote,
+            operatorId: 'OP-01' // Default operator ID
+          })
+        });
+
+        if (response.ok) {
+          // Show success feedback
+          const buttons = document.querySelectorAll('.btn-vote');
+          buttons.forEach(btn => {
+            if (btn.textContent.toLowerCase().includes(vote.toLowerCase())) {
+              btn.textContent = '✓ Voted';
+              btn.style.background = '#dcfce7';
+              btn.style.borderColor = '#16a34a';
+              btn.style.color = '#16a34a';
+            }
+          });
+
+          // Re-enable buttons after 2 seconds
+          setTimeout(() => {
+            buttons.forEach(btn => {
+              btn.disabled = false;
+              btn.textContent = btn.classList.contains('accept') ? '✓ Accept' :
+                               btn.classList.contains('reject') ? '✗ Reject' : '○ Neutral';
+              btn.style.background = '';
+              btn.style.borderColor = '';
+              btn.style.color = '';
+            });
+          }, 2000);
+        } else {
+          throw new Error('Vote submission failed');
+        }
       } catch (error) {
-        document.getElementById("lastUpdated").textContent = "Machine dashboard unavailable: " + error.message;
+        console.error('Error voting on advisory:', error);
+        // Re-enable buttons on error
+        document.querySelectorAll('.btn-vote').forEach(btn => btn.disabled = false);
+        alert('Failed to submit vote. Please try again.');
       }
     }
 

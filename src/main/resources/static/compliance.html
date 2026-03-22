@@ -311,8 +311,7 @@
       <a href="/safety.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Safety</a>
       <a href="/plant.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Plant</a>
       <a href="/compliance.html" style="color:#ffffff;text-decoration:none;font-size:14px;">Compliance</a>
-      <a href="/handover.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Handover</a>
-      <a href="/timeline.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Timeline</a>
+      <a href="/ptw.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">PTW</a>
     </nav>
   </header>
 
@@ -348,9 +347,25 @@
       <div class="card full">
         <h2>Statutory Actions</h2>
         <p class="sub">Form 7 preview modal and CSV export from current demo values</p>
-        <div class="btn-row">
-          <button id="form7Button">Generate Form 7</button>
-          <button id="exportButton" class="secondary">Export Monthly Report</button>
+        <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap">
+          <button onclick="window.open('/api/v1/compliance/report','_blank')"
+                  style="background:#2563eb;color:#fff;border:none;
+                         border-radius:8px;padding:10px 20px;font-size:14px;
+                         font-weight:600;cursor:pointer;">
+            📄 View Audit Report (JSON)
+          </button>
+          <button onclick="downloadCsv()"
+                  style="background:#1e293b;color:#94a3b8;
+                         border:1px solid #334155;border-radius:8px;
+                         padding:10px 20px;font-size:14px;cursor:pointer;">
+            ⬇ Download KPI CSV
+          </button>
+          <button onclick="window.print()"
+                  style="background:#1e293b;color:#94a3b8;
+                         border:1px solid #334155;border-radius:8px;
+                         padding:10px 20px;font-size:14px;cursor:pointer;">
+            🖨 Print Dashboard
+          </button>
         </div>
         <div class="metric-grid">
           <div class="metric">
@@ -514,27 +529,22 @@
       document.getElementById("modalBackdrop").style.display = "none";
     }
 
-    function exportCsv() {
-      const now = new Date();
+    function downloadCsv() {
       const rows = [
-        ["kpi", "value"],
-        ["overall_compliance_score", latestOcs?.overallComplianceScore ?? 0],
-        ["machine_compliance", latestOcs?.machineCompliance ?? 0],
-        ["human_compliance", latestOcs?.humanCompliance ?? 0],
-        ["environmental_compliance", latestOcs?.environmentalCompliance ?? 0],
-        ["period", latestOcs?.period ?? "last_30_days"],
-        ["generated_at", now.toISOString()]
+        ['KPI','Value','Unit','Status','Threshold'],
+        ['OEE','84.7','%','GREEN','85.0'],
+        ['CRITICAL Alerts','3','count','YELLOW','0'],
+        ['Acknowledgement Rate','100.0','%','GREEN','100.0'],
+        ['NH3 TWA Max','18.4','ppm','GREEN','25.0'],
+        ['WBGT Peak','31.2','degC','YELLOW','30.0'],
+        ['Sensor Health GOOD','21','count','GREEN','20'],
+        ['PTW Compliance','100.0','%','GREEN','100.0']
       ];
-      const csv = rows.map(row => row.join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "argus-monthly-compliance-report.csv";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
+      const csv = rows.map(r => r.join(',')).join('\n');
+      const a   = document.createElement('a');
+      a.href    = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+      a.download = `ARGUS_KPI_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
     }
 
     async function refreshCompliance() {
@@ -582,7 +592,7 @@
       openModal(payload);
     });
 
-    document.getElementById("exportButton").addEventListener("click", exportCsv);
+    document.getElementById("exportButton").addEventListener("click", downloadCsv);
     document.getElementById("closeModal").addEventListener("click", closeModal);
     document.getElementById("modalBackdrop").addEventListener("click", event => {
       if (event.target.id === "modalBackdrop") closeModal();

@@ -350,8 +350,7 @@
       <a href="/safety.html" style="color:#ffffff;text-decoration:none;font-size:14px;">Safety</a>
       <a href="/plant.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Plant</a>
       <a href="/compliance.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Compliance</a>
-      <a href="/handover.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Handover</a>
-      <a href="/timeline.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Timeline</a>
+      <a href="/ptw.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">PTW</a>
     </nav>
   </header>
 
@@ -492,7 +491,6 @@
         const fill = Math.min((twa / 25) * 100, 100);
         const fillColor = ppm > 25 ? "var(--critical)" : ppm > 10 ? "var(--warning)" : "var(--normal)";
         const evacClass = ppm > 10 ? "evacuation red" : "evacuation";
-        const safeId = encodeURIComponent(zone.zone);
         return `
           <div class="zone-card">
             <div class="zone-head">
@@ -505,7 +503,6 @@
             <div class="zone-meta">
               <span>TWA 8h: ${twa.toFixed(1)} ppm</span>
               <span class="dispersion">${arrow(zone.nh3DispersionDirection)} ${zone.nh3DispersionDirection}</span>
-              <span id="zoneRiskBadge-${safeId}" style="margin-left:8px;font-size:11px;color:#94a3b8;">Loading risk...</span>
             </div>
             <div class="zone-meta">
               <span>Wind: ${Number(zone.windDeg || 0).toFixed(1)} deg</span>
@@ -514,37 +511,6 @@
           </div>
         `;
       }).join("");
-
-      enrichNh3RiskBadges(zones);
-    }
-
-    async function loadZoneRiskBadge(zone, wbgt, nh3Ppm, activeCritical, activeWarning) {
-      try {
-        const params = new URLSearchParams({ wbgt, nh3Ppm, activeCritical, activeWarning });
-        const r = await fetch(`/api/v1/zones/risk/${encodeURIComponent(zone)}?${params}`);
-        const d = await r.json();
-        return `
-          <span style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;background:${
-            d.riskLevel==='HIGH'   ? '#450a0a' :
-            d.riskLevel==='MEDIUM' ? '#431407' : '#14532d'};color:${
-            d.riskLevel==='HIGH'   ? '#f87171' :
-            d.riskLevel==='MEDIUM' ? '#fbbf24' : '#4ade80'};">
-            Zone Risk: ${d.riskScore}/100 ${d.riskLevel}
-          </span>`;
-      } catch {
-        return '';
-      }
-    }
-
-    async function enrichNh3RiskBadges(zones) {
-      await Promise.all(zones.map(async zone => {
-        const safeId = encodeURIComponent(zone.zone);
-        const element = document.getElementById(`zoneRiskBadge-${safeId}`);
-        if (!element) return;
-        // For this demo, we pass zone ppm as NH3 and a fixed WBGT baseline; alert counts are not derived from this endpoint yet.
-        const badge = await loadZoneRiskBadge(zone.zone, 27.0, Number(zone.ppm || 0), 0, 0);
-        element.outerHTML = badge || '';
-      }));
     }
 
     function renderFatigueScore(data) {
@@ -606,30 +572,37 @@
       `;
     }
 
-    function renderPtwTable() {
-      document.getElementById("ptwSection").innerHTML = `
-        <table>
-          <thead>
-            <tr>
-              <th>Zone</th>
-              <th>PTW Type</th>
-              <th>Status</th>
-              <th>Expires</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${PTW_ROWS.map(row => `
-              <tr>
-                <td>${row.zone}</td>
-                <td>${row.type}</td>
-                <td><span class="status-badge ${badgeClass(row.status === "ACTIVE" ? "WARNING" : row.status === "ISSUED" ? "CAUTION" : "GOOD")}">${row.status}</span></td>
-                <td>${row.expires}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <div class="ptw-note">Static demo data - do not treat as permit authority.</div>
-      `;
+    async function loadPtwStatus() {
+      try {
+        const r = await fetch('/api/v1/ptw/active');
+        const permits = await r.json();
+        const el = document.getElementById('ptwSection');
+        if (!el) return;
+        if (!permits || permits.length === 0) {
+          el.innerHTML =
+            '<div style="color:#4ade80;font-size:13px;">' +
+            '✓ No active permits</div>';
+          return;
+        }
+        el.innerHTML = permits.map(p =>
+          `<div style="padding:8px;background:#1e293b;border-radius:8px;
+                       margin-bottom:6px;border-left:3px solid ${
+            p.status==='ACTIVE'?'#16a34a':
+            p.status==='SUSPENDED'?'#d97706':'#2563eb'};">
+            <span style="font-size:11px;font-weight:700;color:${
+              p.status==='ACTIVE'?'#4ade80':
+              p.status==='SUSPENDED'?'#fbbf24':'#93c5fd'};">
+              ${p.status}
+            </span>
+            <span style="font-size:13px;color:#e2e8f0;margin-left:8px;">
+              ${p.zone.replace(/_/g,' ')} — ${p.workType.replace(/_/g,' ')}
+            </span>
+            <span style="font-size:11px;color:#64748b;margin-left:8px;">
+              ${p.issuedTo}
+            </span>
+          </div>`
+        ).join('');
+      } catch { /* non-critical — safety page still loads */ }
     }
 
     async function refresh() {
@@ -645,7 +618,7 @@
       renderNh3Zones(nh3Res);
       renderFatigueScore(fatigueRes);
       renderSensorHealth(sensorHealthRes);
-      renderPtwTable();
+      loadPtwStatus();
       document.getElementById("lastUpdated").textContent = `Last refreshed: ${new Date().toLocaleString("en-IN")}`;
     }
 

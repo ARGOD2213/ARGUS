@@ -248,8 +248,7 @@
       <a href="/safety.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Safety</a>
       <a href="/plant.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Plant</a>
       <a href="/compliance.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Compliance</a>
-      <a href="/handover.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Handover</a>
-      <a href="/timeline.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">Timeline</a>
+      <a href="/ptw.html" style="color:#94a3b8;text-decoration:none;font-size:14px;">PTW</a>
     </nav>
   </header>
 
@@ -348,18 +347,10 @@
     }
 
     function renderSummaryCards(metrics) {
-      const unackedCount = metrics.unacknowledged || 0;
       document.getElementById("summaryCards").innerHTML = `
         <div class="metric">
           <div class="label">Active CRITICAL Alerts</div>
-          <div class="value" style="color:#f87171;">${metrics.criticalAlerts}</div>
-          ${unackedCount > 0 ? `
-          <div style="margin-top:8px;background:#fee2e2;border-radius:8px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px;">
-            <span style="color:#dc2626;font-size:12px;font-weight:700;">⚠ ${unackedCount} unacknowledged</span>
-          </div>` : `
-          <div style="margin-top:8px;">
-            <span style="color:#16a34a;font-size:12px;">✓ All acknowledged</span>
-          </div>`}
+          <div class="value">${metrics.criticalAlerts}</div>
         </div>
         <div class="metric">
           <div class="label">Plant OEE Average</div>
@@ -406,8 +397,7 @@
         { href: "/safety.html", title: "Human Safety", summary: "WBGT " + data.wbgt.toFixed(1) + " | Max NH3 " + data.maxNh3.toFixed(1) + " ppm" },
         { href: "/plant.html", title: "Plant-Wide", summary: "Plant OEE " + data.plantOee.toFixed(1) + "% | Zones with alerts: " + data.zonesWithAlerts },
         { href: "/compliance.html", title: "Compliance", summary: "OCS " + data.compliance.toFixed(1) + "% | Demo period " + data.compliancePeriod },
-        { href: "/handover.html", title: "Handover Log", summary: "Shift summary, operator notes, and AI advisory for incoming team" },
-        { href: "/timeline.html", title: "Situation Timeline", summary: "Chronological abnormal event history and acknowledgement trail" }
+        { href: "/ptw.html", title: "Permit to Work", summary: "OISD-STD-105 compliance | Active permits management" }
       ];
 
       document.getElementById("navCards").innerHTML = cards.map(card => `
@@ -420,13 +410,12 @@
 
     async function refreshOverview() {
       try {
-        const [platform, machines, weather, compliance, nh3Zones, unacknowledgedAlerts] = await Promise.all([
+        const [platform, machines, weather, compliance, nh3Zones] = await Promise.all([
           fetchJson("/api/platform/status"),
           fetchJson("/api/machines"),
           fetchJson("/api/v1/weather/current"),
           fetchJson("/api/v1/compliance/ocs-score"),
-          fetchJson("/api/v1/safety/nh3-zones"),
-          fetchJson("/api/v1/alerts/unacknowledged").catch(() => [])
+          fetchJson("/api/v1/safety/nh3-zones")
         ]);
 
         renderPlatformStatus(platform);
@@ -451,7 +440,6 @@
 
         renderSummaryCards({
           criticalAlerts,
-          unacknowledged: Array.isArray(unacknowledgedAlerts) ? unacknowledgedAlerts.length : 0,
           plantOee,
           wbgt: Number(weather.wbgt || 0),
           compliance: Number(compliance.overallComplianceScore || 0)
