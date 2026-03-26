@@ -1,85 +1,78 @@
 # ARGODREIGN Mobile Chat Space
 
-User note preserved:
-- `hi this is just for a test if you can see this give me reply in codex`
-
-This is your online browser space to continue work from phone.
-
-Important:
-- The exact Codex desktop chat thread is not available on mobile.
-- This file is the live handoff bridge between desktop work and mobile updates.
-- This page itself is not a chat box. It is a document.
-
-## Why You Cannot Type Here
-
-GitHub file view is read-only by default.
-
-To type from phone, use one of these:
-1. Tap the pencil icon (`Edit`) on this file, add your note, and commit.
-2. Open or create a GitHub Issue and type comments there (best for chat-like updates).
-3. Keep using this Codex thread when desktop is available.
+This file is the phone-first handoff bridge for the current repo state.
 
 ## How to Use From Phone
 
-1. Open this file in GitHub mobile browser/app.
+1. Open this file in GitHub mobile app or browser.
 2. Read `Latest Update` first.
-3. Copy the `Reviewer Prompt` section if you need external review.
-4. Run START/STOP workflows from GitHub Actions as usual.
-5. Come back here for next actions.
+3. Run `START IoT Server` only after repository secrets are configured.
+4. Use the `Reviewer Prompt` block when you want an external review.
+5. Run `STOP IoT Server` after the demo to stop billing.
 
-## Async Office Mode (No Desktop Needed)
+## Mobile Start Notes
 
-1. Open reviewer issue template:
-   - `https://github.com/ARGOD2213/ARGODGEIGN/issues/new?template=reviewer-drop.yml`
-2. Paste reviewer output and submit.
-3. Wait for action `Review Inbox Sync` to finish.
-4. Open:
-   - `docs/REVIEW_INBOX.md`
-5. Run workflow:
-   - `Trigger Codex Execution`
-   - optional `issue_number`
-6. Send Codex:
-   - `Process docs/REVIEW_INBOX.md and implement all P1 then P2 fixes. Commit and push.`
-7. If sync does not update in 2 minutes:
-   - Run workflow `Review Inbox Sync` manually from Actions.
-   - Pass `issue_number` if needed.
+- Workflow: `.github/workflows/start-server.yml`
+- Default login if no dashboard secrets are set: `argus` / `changeme`
+- Optional secrets for custom login:
+  - `ARGUS_DASHBOARD_USER`
+  - `ARGUS_DASHBOARD_PASS`
+- The start workflow now waits for:
+  - EC2 instance status checks
+  - local app health on EC2
+  - public health reachability from the runner
 
 ## Latest Update (IST)
 
-- Processed current synced review issue `#2`:
-  - Added interactive chart upgrades on all dashboards:
-    - `machine.html`: alert severity doughnut chart
-    - `safety.html`: risk mix + NH3 zone share charts
-    - `plant.html`: status mix + zone risk charts
-    - `compliance.html`: compliance component + inspection status charts
-- Added one-click trigger workflow:
-  - `.github/workflows/trigger-codex-execution.yml`
-  - queue files:
-    - `docs/CODEX_TRIGGER_QUEUE.md`
-    - `docs/CODEX_TRIGGER_LATEST.md`
-- Auto-sync trigger hardened:
-  - Works for normal `Review` issue titles too.
-  - Added manual Action run fallback (`Review Inbox Sync` with `issue_number`).
-- Review inbox currently tracks latest issue from sync workflow.
-- Sprint 1: Closed.
-- Sprint 2 progress in repo: machine, safety, plant, compliance dashboards added.
-- LLM confidence, advisory wrapper, and day-by-day evidence files are committed.
-- Remaining work should now follow reviewer checkpoint feedback and integration hardening.
-- Copy-paste packet for reviewer is available at:
-  - `docs/REVIEWER_COPY_PACKET.md`
+- Sprint 8 completed in repo scope:
+  - AI advisory evidence ledger added for alert-backed advisories
+  - Human approval workflow added: `DRAFT -> REVIEWED -> APPROVED/REJECTED`
+  - Alert evidence endpoints added under `/api/v1/alerts/*`
+  - Dashboard overview now exposes advisory approval summary
+  - Mobile start workflow hardened for real health checks
+- README and mobile operations docs updated to match current workflow and login defaults
+- Main implementation commit:
+  - `1964dab` `feat(sprint8): add advisory evidence workflow and mobile start hardening`
+
+## Completed Tasks
+
+- Backend governance:
+  - `src/main/java/com/mahindra/iot/service/AdvisoryWorkflowService.java`
+  - `src/main/java/com/mahindra/iot/controller/AlertWorkflowController.java`
+  - `src/main/java/com/mahindra/iot/model/SensorEvent.java`
+- Mobile runtime hardening:
+  - `.github/workflows/start-server.yml`
+  - `docs/GITHUB_SECRETS_SETUP.md`
+  - `docs/MOBILE_OPERATIONS_PLAYBOOK.md`
+- Repo status docs:
+  - `README.md`
+
+## Quick API Checks
+
+- Health:
+  - `GET /api/v1/health`
+- Recent evidence:
+  - `GET /api/v1/alerts/evidence`
+- Single alert evidence:
+  - `GET /api/v1/alerts/{alertId}/evidence`
+- Review:
+  - `POST /api/v1/alerts/{alertId}/review`
+- Approve:
+  - `POST /api/v1/alerts/{alertId}/approve`
+- Reject:
+  - `POST /api/v1/alerts/{alertId}/reject`
 
 ## Reviewer Prompt (Copy/Paste)
 
-Use this with your reviewer:
-
 ```text
-Please audit the latest ARGODREIGN master branch for Sprint 2 progress.
+Please audit the latest ARGODREIGN master branch for Sprint 8 completion.
+
 Focus on:
-1) Dashboard functionality: /machine.html, /safety.html, /plant.html, /compliance.html
-2) AI governance: AiAdvisoryWrapper present and confidence is computed (not hardcoded)
-3) Safety architecture: rule engine remains Lambda-only (no control logic in Spring Boot)
-4) Cost guardrails: budget + cache + no expensive always-on services
-5) Evidence docs under /docs for Day 7/9/11/12/13/14
+1) Advisory evidence ledger: every alert-backed AI advisory should carry input tags, rule version, model version, confidence, reviewer metadata, and evidence ID
+2) Approval workflow: transitions must be DRAFT -> REVIEWED -> APPROVED/REJECTED with invalid transitions blocked
+3) API coverage: /api/v1/alerts/{alertId}/review, approve, reject, and evidence endpoints should behave coherently
+4) Mobile GitHub Actions start path: START IoT Server should wait for EC2 readiness and HTTP health before reporting success
+5) Docs alignment: README and mobile docs should describe the same workflow and default login behavior
 
 Return:
 - PASS/FAIL by checkpoint
@@ -87,19 +80,7 @@ Return:
 - only actionable fixes in priority order (P1 -> P3)
 ```
 
-## Mobile Quick Links
-
-- Actions: `START IoT Server`, `STOP IoT Server`
-- Review inbox:
-  - `docs/REVIEW_INBOX.md`
-  - `docs/ASYNC_OFFICE_MODE.md`
-- Dashboards:
-  - `/machine.html`
-  - `/safety.html`
-  - `/plant.html`
-  - `/compliance.html`
-
 ## Notes
 
-- Never paste AWS/API secrets in issues or chat.
-- Keep EC2 stopped when not actively using dashboards.
+- Do not paste AWS or API secrets into issues or reviewer notes.
+- Keep EC2 stopped when not actively demoing.
